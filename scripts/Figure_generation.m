@@ -92,7 +92,7 @@ figure(5)
 MC_energy_list = consensus_energy_list + offloading_energy_list;
 y_index = 5:1:14;
 x_OO = MC_energy_list(1,:);
-x_NO =offloading_energy_list(2,:)  + consensus_energy_list(2,:) ;
+x_NO = MC_energy_list(2,:) ;
 x_RO = MC_energy_list(3,:);
 x_proposed = MC_energy_list(4,:);
 x_BCD = MC_energy_list(5,:);
