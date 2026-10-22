@@ -1,6 +1,6 @@
-# Blockchain-enabled UCMEC
+# Energy-Efficient Blockchain-enabled UCMEC
 
-MATLAB evaluation code for [IEEE TCCN 10460318](https://ieeexplore.ieee.org/abstract/document/10460318).
+This is the updated version of the MATLAB evaluation code for [IEEE TCCN 10460318](https://ieeexplore.ieee.org/abstract/document/10460318).
 
 ## Repository layout
 
