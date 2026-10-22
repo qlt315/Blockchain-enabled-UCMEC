@@ -1,0 +1,680 @@
+
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>Reference guide &#8212; CVX Users&#39; Guide</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/cloud.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noticia+Text:400,i,b,bi|Open+Sans:400,i,b,bi|Roboto+Mono:400,i,b,bi&amp;display=swap" type="text/css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    
+    
+     
+        <script src="_static/jquery.cookie.js"></script>
+    
+
+    
+     
+        <script src="_static/cloud.base.js"></script>
+    
+
+    
+     
+        <script src="_static/cloud.js"></script>
+    
+
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Support" href="support.html" />
+    <link rel="prev" title="Solvers" href="solver.html" /> 
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head><body>
+    <div class="relbar-top">
+        
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="support.html" title="Support"
+             accesskey="N">next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="solver.html" title="Solvers"
+             accesskey="P">previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">CVX Users&#39; Guide</a> &#187;</li>
+
+        <li class="nav-item nav-item-this"><a href="">Reference guide</a></li> 
+      </ul>
+    </div>
+    </div>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="reference-guide">
+<span id="funcref"></span><h1>Reference guide<a class="headerlink" href="#reference-guide" title="Permalink to this heading">¶</a></h1>
+<p>In this section we describe each operator, function, set, and command that you are
+likely to encounter in CVX. In some cases, limitations of the underlying solver
+place certain restrictions or caveats on their use:</p>
+<ul class="simple">
+<li><p>Functions marked with a dagger (†) are not supported natively by manu
+solvers that CVX uses. Models incorporating these functions will be solved
+most effectively by Mosek, the only bundled solver with support for the
+exponential cone upon which these functions are constructed. For all
+other solvers, these functions are handled using a successive
+approximation method which makes multiple calls to the underlying
+solver, achieving the same final precision. If your problem requires the use
+of the successive approximation method, a warning will be issued.
+This technique is discussed further in
+<a class="reference internal" href="advanced.html#successive"><span class="std std-ref">The successive approximation method</span></a>. As this section discusses, this is an experimental
+approach that works well in many cases, but cannot be guaranteed.</p></li>
+<li><p>Functions involving powers (<em>e.g.</em>, <code class="docutils literal notranslate"><span class="pre">x^p</span></code>) and <span class="math notranslate nohighlight">\(p\)</span>-norms
+(<em>e.g.</em>, <code class="docutils literal notranslate"><span class="pre">norm(x,p)</span></code>) are marked with a double dagger (‡). CVX
+represents these functions exactly when <span class="math notranslate nohighlight">\(p\)</span> is a rational
+number. For irrational values of <code class="docutils literal notranslate"><span class="pre">p</span></code>, a nearby rational is selected
+instead. See <a class="reference internal" href="advanced.html#powerfunc"><span class="std std-ref">Power functions and p-norms</span></a> for details on
+how both cases are handled.</p></li>
+</ul>
+<section id="arithmetic-operators">
+<h2>Arithmetic operators<a class="headerlink" href="#arithmetic-operators" title="Permalink to this heading">¶</a></h2>
+<p>Matlab’s standard arithmetic operations for addition <code class="docutils literal notranslate"><span class="pre">+</span></code>, subtraction <code class="docutils literal notranslate"><span class="pre">-</span></code>,
+multiplication, <code class="docutils literal notranslate"><span class="pre">*</span></code> <code class="docutils literal notranslate"><span class="pre">.*</span></code>, division <code class="docutils literal notranslate"><span class="pre">/</span></code> <code class="docutils literal notranslate"><span class="pre">./</span></code> <code class="docutils literal notranslate"><span class="pre">\</span></code> <code class="docutils literal notranslate"><span class="pre">.\</span></code>, and
+exponentiation <code class="docutils literal notranslate"><span class="pre">^</span></code> <code class="docutils literal notranslate"><span class="pre">.^</span></code> have been overloaded to work in
+CVX whenever appropriate—that is, whenever their use is consistent
+with both standard mathematical and Matlab conventions <em>and</em> the DCP
+ruleset. For example:</p>
+<ul class="simple">
+<li><p>Two CVX expressions can be added together if they are of the same
+dimension (or one is scalar) and have the same curvature (<em>i.e.</em>,
+both are convex, concave, or affine).</p></li>
+<li><p>A CVX expression can be multiplied or divided by a scalar
+constant. If the constant is positive, the curvature is preserved; if
+it is negative, curvature is reversed.</p></li>
+<li><p>An affine column vector CVX expression can be multiplied by a
+constant matrix of appropriate dimensions; or it can be left-divided
+by a non-singular constant matrix of appropriate dimension.</p></li>
+</ul>
+<p>Numerous other combinations are possible, of course. The use of the exponentiation
+operators <code class="docutils literal notranslate"><span class="pre">^</span></code> <code class="docutils literal notranslate"><span class="pre">.^</span></code> are somewhat limited;
+see the definitions of <code class="docutils literal notranslate"><span class="pre">power</span></code> in <a class="reference internal" href="#nonlinear"><span class="std std-ref">Nonlinear</span></a> below.</p>
+<p>Matlab’s basic matrix manipulation and arithmetic operations have been
+extended to work with CVX expressions as well, including:</p>
+<ul class="simple">
+<li><p>Concatenation: <code class="docutils literal notranslate"><span class="pre">[</span> <span class="pre">A,</span> <span class="pre">B</span> <span class="pre">;</span> <span class="pre">C,</span> <span class="pre">D</span> <span class="pre">]</span></code></p></li>
+<li><p>Indexing: <code class="docutils literal notranslate"><span class="pre">x(n+1:end)</span></code>, <code class="docutils literal notranslate"><span class="pre">X([3,4],:)</span></code>, <em>etc.</em></p></li>
+<li><p>Indexed assignment, including deletion: <code class="docutils literal notranslate"><span class="pre">y(2:4)</span> <span class="pre">=</span> <span class="pre">1</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Z(1:4,:)</span> <span class="pre">=</span> <span class="pre">[]</span></code>, <em>etc.</em></p></li>
+<li><p>Transpose and conjugate transpose: <code class="docutils literal notranslate"><span class="pre">Z.'</span></code>, <code class="docutils literal notranslate"><span class="pre">y'</span></code></p></li>
+</ul>
+</section>
+<section id="built-in-functions">
+<span id="builtin"></span><h2>Built-in functions<a class="headerlink" href="#built-in-functions" title="Permalink to this heading">¶</a></h2>
+<section id="linear">
+<h3>Linear<a class="headerlink" href="#linear" title="Permalink to this heading">¶</a></h3>
+<p>A number of Matlab’s basic linear and bilinear functions either work automatically
+with <code class="docutils literal notranslate"><span class="pre">cvx</span></code> expressions or have been extended to do so, including:
+<code class="docutils literal notranslate"><span class="pre">conj</span></code>, <code class="docutils literal notranslate"><span class="pre">conv</span></code>, <code class="docutils literal notranslate"><span class="pre">cumsum</span></code>, <code class="docutils literal notranslate"><span class="pre">diag</span></code>, <code class="docutils literal notranslate"><span class="pre">dot</span></code>,
+<code class="docutils literal notranslate"><span class="pre">find</span></code>, <code class="docutils literal notranslate"><span class="pre">fliplr</span></code>, <code class="docutils literal notranslate"><span class="pre">flipud</span></code>, <code class="docutils literal notranslate"><span class="pre">flipdim</span></code>,
+<code class="docutils literal notranslate"><span class="pre">horzcat</span></code>, <code class="docutils literal notranslate"><span class="pre">hankel</span></code>, <code class="docutils literal notranslate"><span class="pre">ipermute</span></code>, <code class="docutils literal notranslate"><span class="pre">kron</span></code>, <code class="docutils literal notranslate"><span class="pre">mean</span></code>,
+<code class="docutils literal notranslate"><span class="pre">permute</span></code>, <code class="docutils literal notranslate"><span class="pre">repmat</span></code>, <code class="docutils literal notranslate"><span class="pre">reshape</span></code>, <code class="docutils literal notranslate"><span class="pre">rot90</span></code>,
+<code class="docutils literal notranslate"><span class="pre">sparse</span></code>, <code class="docutils literal notranslate"><span class="pre">sum</span></code>, <code class="docutils literal notranslate"><span class="pre">trace</span></code>, <code class="docutils literal notranslate"><span class="pre">tril</span></code>, <code class="docutils literal notranslate"><span class="pre">triu</span></code>,
+<code class="docutils literal notranslate"><span class="pre">toeplitz</span></code>, <code class="docutils literal notranslate"><span class="pre">vertcat</span></code>.</p>
+<p>Most should behave identically with CVX expressions as they do with
+numeric expressions. Those that perform some sort of summation, such as
+<code class="docutils literal notranslate"><span class="pre">cumsum</span></code>, <code class="docutils literal notranslate"><span class="pre">sum</span></code>, or multiplication, such as <code class="docutils literal notranslate"><span class="pre">conv</span></code>, <code class="docutils literal notranslate"><span class="pre">dot</span></code> or
+<code class="docutils literal notranslate"><span class="pre">kron</span></code>, can only be used in accordance with the disciplined convex
+programming rules. For example, <code class="docutils literal notranslate"><span class="pre">kron(X,Y)</span></code> is valid only if either
+<code class="docutils literal notranslate"><span class="pre">X</span></code> or <code class="docutils literal notranslate"><span class="pre">Y</span></code> is constant; and <code class="docutils literal notranslate"><span class="pre">trace(Z)</span></code> is valid only if the
+elements along the diagonal have the same curvature.</p>
+</section>
+<section id="nonlinear">
+<span id="id1"></span><h3>Nonlinear<a class="headerlink" href="#nonlinear" title="Permalink to this heading">¶</a></h3>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">abs</span></code></dt><dd><p>absolute value for real and complex arrays. Convex.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">exp</span></code></dt><dd><p>exponential. Convex and nondecreasing.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">log</span></code></dt><dd><p>logarithm. Concave and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">max</span></code></dt><dd><p>maximum. Convex and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">min</span></code></dt><dd><p>minimum. Concave and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">norm</span></code></dt><dd><p>norms for real and complex vectors and matrices. Convex. Thus
+function follows the Matlab conventions closely. Thus the
+one-argument version <code class="docutils literal notranslate"><span class="pre">norm(x)</span></code> computes the 2-norm for vectors,
+and the 2-norm (maximum singular value) for matrices. The
+two-argument version <code class="docutils literal notranslate"><span class="pre">norm(x,p)</span></code> is supported as follows:</p>
+<ul class="simple">
+<li><p>‡ For vectors, all values <span class="math notranslate nohighlight">\(p\geq 1\)</span> are accepted.</p></li>
+<li><p>For matrices, <code class="docutils literal notranslate"><span class="pre">p</span></code> must be <code class="docutils literal notranslate"><span class="pre">1</span></code>, <code class="docutils literal notranslate"><span class="pre">2</span></code>, <code class="docutils literal notranslate"><span class="pre">Inf</span></code>, or <code class="docutils literal notranslate"><span class="pre">'Fro'</span></code>.</p></li>
+</ul>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">polyval</span></code></dt><dd><p>polynomial evaluation. <code class="docutils literal notranslate"><span class="pre">polyval(p,x)</span></code>, where <code class="docutils literal notranslate"><span class="pre">p</span></code> is a vector of
+length <code class="docutils literal notranslate"><span class="pre">n</span></code>, computes</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>p(1) * x.^(n-1) + p(2) * x.^(n-2) + ... + p(n-1) * x + p(n)
+</pre></div>
+</div>
+<p>This function can be used in CVX in two ways:</p>
+<ul class="simple">
+<li><p>If <code class="docutils literal notranslate"><span class="pre">p</span></code> is a variable and <code class="docutils literal notranslate"><span class="pre">x</span></code> is a constant, then
+<code class="docutils literal notranslate"><span class="pre">polyval(x,p)</span></code> computes a linear combination of the elements of
+<code class="docutils literal notranslate"><span class="pre">p</span></code>. The combination must satisfy the DCP rules for addition
+and scaling.</p></li>
+<li><p>If <code class="docutils literal notranslate"><span class="pre">p</span></code> is a constant and <code class="docutils literal notranslate"><span class="pre">x</span></code> is a variable, then
+<code class="docutils literal notranslate"><span class="pre">polyval(x,p)</span></code> constructs a polynomial function of the variable
+<code class="docutils literal notranslate"><span class="pre">x</span></code>. The polynomial must be affine, convex, or concave, and
+<code class="docutils literal notranslate"><span class="pre">x</span></code> must be real and affine.</p></li>
+</ul>
+</dd>
+<dt>‡ <code class="docutils literal notranslate"><span class="pre">power(x,p)</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">x^p</span></code> and <code class="docutils literal notranslate"><span class="pre">x.^p</span></code>, where <code class="docutils literal notranslate"><span class="pre">x</span></code> is a real variable and and <code class="docutils literal notranslate"><span class="pre">p</span></code>
+is a real constant. For <code class="docutils literal notranslate"><span class="pre">x^p</span></code>, both <code class="docutils literal notranslate"><span class="pre">x</span></code> and <code class="docutils literal notranslate"><span class="pre">p</span></code> must be
+scalars. Only those values of <code class="docutils literal notranslate"><span class="pre">p</span></code> which can reasonably and
+unambiguously interpreted as convex or concave are accepted:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(p=0\)</span>. Constant. <code class="docutils literal notranslate"><span class="pre">x.^p</span></code> is treated as identically 1.</p></li>
+<li><p><span class="math notranslate nohighlight">\(0 &lt; p &lt; 1\)</span>. Concave. The argument <span class="math notranslate nohighlight">\(x\)</span> must be
+concave (or affine), and is implicitly constrained to be
+nonnegative.</p></li>
+<li><p><span class="math notranslate nohighlight">\(p = 1\)</span>. Affine. <code class="docutils literal notranslate"><span class="pre">x.^p</span></code> is simply <code class="docutils literal notranslate"><span class="pre">x</span></code>.</p></li>
+<li><p><span class="math notranslate nohighlight">\(p \in \{2,4,6,8,...\}\)</span>. Convex. Argument <span class="math notranslate nohighlight">\(x\)</span> must be
+affine.</p></li>
+<li><p><span class="math notranslate nohighlight">\(p &gt; 1\)</span>, <span class="math notranslate nohighlight">\(p\not\in\{2,3,4,5,...\}\)</span>. Convex. Argument
+<span class="math notranslate nohighlight">\(x\)</span> must be affine, and is implicitly constrained to be
+nonnegative.</p></li>
+</ul>
+<p>Negative and odd integral values of <span class="math notranslate nohighlight">\(p\)</span> are not permitted, but
+see the functions <code class="docutils literal notranslate"><span class="pre">pow_p</span></code>, <code class="docutils literal notranslate"><span class="pre">pow_pos</span></code>, and <code class="docutils literal notranslate"><span class="pre">pow_abs</span></code> in the
+next section for useful alternatives.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">power(p,x)</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">p.^x</span></code> and <code class="docutils literal notranslate"><span class="pre">p^x</span></code>, where <code class="docutils literal notranslate"><span class="pre">p</span></code> is a real constant and <code class="docutils literal notranslate"><span class="pre">x</span></code> is a
+real variable. For <code class="docutils literal notranslate"><span class="pre">p^x</span></code>, both <code class="docutils literal notranslate"><span class="pre">p</span></code> and <code class="docutils literal notranslate"><span class="pre">x</span></code> must be scalars.
+Valid values of <code class="docutils literal notranslate"><span class="pre">p</span></code> include:</p>
+<ul class="simple">
+<li><p><span class="math notranslate nohighlight">\(p \in \{0,1\}\)</span>. Constant.</p></li>
+<li><p><span class="math notranslate nohighlight">\(0 &lt; p &lt; 1\)</span>. Convex and nonincreasing; <code class="docutils literal notranslate"><span class="pre">x</span></code> must be
+concave.</p></li>
+<li><p><span class="math notranslate nohighlight">\(p &gt; 1\)</span>. Convex and nondecreasing; <code class="docutils literal notranslate"><span class="pre">x</span></code> must be convex.</p></li>
+</ul>
+<p>Negative values of <code class="docutils literal notranslate"><span class="pre">p</span></code> are not permitted.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">std</span></code></dt><dd><p>Standard deviation. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sqrt</span></code></dt><dd><p>Square root. Implicitly constrains its argument to be nonnegative.
+Concave and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">var</span></code></dt><dd><p>Variance. Convex.</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="new-functions">
+<span id="newfuncs"></span><h2>New functions<a class="headerlink" href="#new-functions" title="Permalink to this heading">¶</a></h2>
+<p>Even though these functions were developed specifically for CVX,
+they work outside of a CVX specification as well, when supplied with
+numeric arguments.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">avg_abs_dev</span></code></dt><dd><dl>
+<dt>The average absolute deviation about the mean <span class="math notranslate nohighlight">\(\mu(x)\)</span> of <span class="math notranslate nohighlight">\(x\)</span>. Convex.</dt><dd><div class="math notranslate nohighlight">
+\[f_{\text{aad}}(x) = \frac{1}{n} \sum_{i=1}^n |x_i-\mu(x)| = \frac{1}{n} \sum_{i=1}^n \left| x_i - {\textstyle\frac{1}{n}\sum_i x_i}\right| = \frac{1}{n}\left\| (I-\tfrac{1}{n}\textbf{1}\textbf{1}^T)x \right\|_1.\]</div>
+</dd>
+</dl>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">avg_abs_dev_med</span></code></dt><dd><dl>
+<dt>The average absolute deviation about the median <span class="math notranslate nohighlight">\(\mathop{\textrm{m}}(x)\)</span> of <span class="math notranslate nohighlight">\(x\)</span>. Convex.</dt><dd><div class="math notranslate nohighlight">
+\[f_{\text{aadm}}(x) = \frac{1}{n} \sum_{i=1}^n |x_i-\mathop{\textrm{m}}(x)| = \inf_y \frac{1}{n} \sum_{i=1}^n |x_i-y|\]</div>
+</dd>
+</dl>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">berhu(x,M)</span></code></dt><dd><dl>
+<dt>The reversed Huber function (hence, Berhu), defined as</dt><dd><div class="math notranslate nohighlight">
+\[\begin{split}f_{\text{berhu}}(x,M) \triangleq \begin{cases} |x| &amp; |x| \leq M \\ (|x|^2+M^2)/2M &amp; |x| \geq M \end{cases}\end{split}\]</div>
+</dd>
+</dl>
+<p>Convex. If <span class="math notranslate nohighlight">\(M\)</span> is omitted, <span class="math notranslate nohighlight">\(M=1\)</span> is assumed; but if supplied, it must be a positive constant.
+Also callable with three arguments as <code class="docutils literal notranslate"><span class="pre">berhu(x,M,t)</span></code>, which computes <code class="docutils literal notranslate"><span class="pre">t+t*berhu(x/t,M)</span></code>,
+useful for concomitant scale estimation (see <a class="reference internal" href="credits.html#owen06" id="id2"><span>[Owen06]</span></a>).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">det_inv</span></code></dt><dd><p>determinant of inverse of a symmetric (or Hermitian) positive
+definite matrix, <span class="math notranslate nohighlight">\(\det X^{-1}\)</span>, which is the same as the
+product of the inverses of the eigenvalues. When used inside a
+CVX specification, <code class="docutils literal notranslate"><span class="pre">det_inv</span></code> constrains the matrix to be
+symmetric (if real) or Hermitian (if complex) and positive
+semidefinite. When used with numerical arguments, <code class="docutils literal notranslate"><span class="pre">det_inv</span></code>
+returns <code class="docutils literal notranslate"><span class="pre">+Inf</span></code> if these constraints are not met. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">det_rootn</span></code></dt><dd><p><span class="math notranslate nohighlight">\(n\)</span>-th root of the determinant of a semidefinite matrix,
+<span class="math notranslate nohighlight">\((\det X)^{1/n}\)</span>. When used inside a CVX specification,
+<code class="docutils literal notranslate"><span class="pre">det_rootn</span></code> constrains the matrix to be symmetric (if real) or
+Hermitian (if complex) and positive semidefinite. When used with
+numerical arguments, <code class="docutils literal notranslate"><span class="pre">det_rootn</span></code> returns <code class="docutils literal notranslate"><span class="pre">-Inf</span></code> if these
+constraints are not met. Concave.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">det_root2n</span></code></dt><dd><p>the <span class="math notranslate nohighlight">\(2n\)</span>-th root of the determinant of a semidefinite matrix;
+<em>i.e.</em>, <code class="docutils literal notranslate"><span class="pre">det_root2n(X)=sqrt(det_rootn(X))</span></code>. Concave. Maintained
+solely for back-compatibility purposes.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">entr</span></code></dt><dd><p>the elementwise entropy function: <code class="docutils literal notranslate"><span class="pre">entr(x)=-x.*log(x)</span></code>. Concave.
+Returns <code class="docutils literal notranslate"><span class="pre">-Inf</span></code> when called with a constant argument that has a
+negative entry.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">geo_mean</span></code></dt><dd><p>the geometric mean of a vector,
+<span class="math notranslate nohighlight">\(\left( \prod_{k=1}^n x_k \right)^{1/n}\)</span>. When used inside a
+CVX specification, <code class="docutils literal notranslate"><span class="pre">geo_mean</span></code> constrains the elements of the
+vector to be nonnegative. When used with numerical arguments,
+<code class="docutils literal notranslate"><span class="pre">geo_mean</span></code> returns <code class="docutils literal notranslate"><span class="pre">-Inf</span></code> if any element is negative. Concave
+and increasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">huber(x,M)</span></code></dt><dd><dl>
+<dt>The Huber function, defined as</dt><dd><div class="math notranslate nohighlight">
+\[\begin{split}f_{\text{huber}}(x,M) \triangleq \begin{cases} |x|^2 &amp; |x| \leq M \\ 2M|x|-M^2 &amp; |x| \geq M \end{cases}\end{split}\]</div>
+</dd>
+</dl>
+<p>Convex. If $x$ is a vector or array, the function is applied on an elementwise basis. If $M$ is omitted, then $M=1$ is assumed; but if it supplied, it must be a positive constant. Also callable as <code class="docutils literal notranslate"><span class="pre">huber(x,M,t)</span></code>, which computes <code class="docutils literal notranslate"><span class="pre">t+t*huber(x/t,M)</span></code>, useful for concomitant scale estimation (see <a class="reference internal" href="credits.html#owen06" id="id3"><span>[Owen06]</span></a>).</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">huber_circ(x,M)</span></code></dt><dd><dl>
+<dt>The circularly symmetric Huber function, defined as</dt><dd><div class="math notranslate nohighlight">
+\[\begin{split}f_{\text{huber\_circ}}(x,M) \triangleq \begin{cases} \|x\|_2^2 &amp; \|x\|_2 \leq M \\ 2M\|x\|_2-M^2 &amp; \|x\|_2 \geq M \end{cases}\end{split}\]</div>
+</dd>
+</dl>
+<p>Convex. Same (and implemented) as <code class="docutils literal notranslate"><span class="pre">huber_pos(norm(x),M)</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">huber_pos(x,M)</span></code></dt><dd><p>The same as the Huber function for nonnegative <code class="docutils literal notranslate"><span class="pre">x</span></code>; zero for
+negative <code class="docutils literal notranslate"><span class="pre">x</span></code>. Convex and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">inv_pos</span></code></dt><dd><p>The inverse of the positive portion, <span class="math notranslate nohighlight">\(1/\max\{x,0\}\)</span>. Inside
+CVX specification, imposes constraint that its argument is
+positive. Outside CVX specification, returns <span class="math notranslate nohighlight">\(+\infty\)</span> if
+<span class="math notranslate nohighlight">\(x\leq 0\)</span>. Convex and decreasing.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">kl_div</span></code></dt><dd><p>Kullback-Leibler distance:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}f_{\text{kl}}(x,y) \triangleq \begin{cases} x\log(x/y)-x+y &amp; x,y&gt;0 \\ 0 &amp; x=y=0 \\ +\infty &amp; \text{otherwise} \end{cases}\end{split}\]</div>
+<p>Convex. Outside CVX specification, returns <span class="math notranslate nohighlight">\(+\infty\)</span> if arguments aren’t in the
+domain.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lambda_max</span></code></dt><dd><p>maximum eigenvalue of a real symmetric or complex Hermitian matrix.
+Inside CVX, imposes constraint that its argument is symmetric
+(if real) or Hermitian (if complex). Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lambda_min</span></code></dt><dd><p>minimum eigenvalue of a real symmetric or complex Hermitian matrix.
+Inside CVX, imposes constraint that its argument is symmetric
+(if real) or Hermitian (if complex). Concave.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lambda_sum_largest(X,k)</span></code></dt><dd><p>sum of the largest <span class="math notranslate nohighlight">\(k\)</span> values of a real symmetric or complex
+Hermitian matrix. Inside CVX, imposes constraint that its
+argument is symmetric (if real) or Hermitian (if complex). Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lambda_sum_smallest(X,k)</span></code></dt><dd><p>sum of the smallest <span class="math notranslate nohighlight">\(k\)</span> values of a real symmetric or complex
+Hermitian matrix. Inside CVX, imposes constraint that its
+argument is symmetric (if real) or Hermitian (if complex). Concave.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">log_det</span></code></dt><dd><p>log of determinant of a positive definite matrix,
+<span class="math notranslate nohighlight">\(\log \det(X)\)</span>. When used inside a CVX specification,
+<code class="docutils literal notranslate"><span class="pre">log_det</span></code> constrains its argument to be symmetric (if real) or
+Hermitian (if complex) and positive definite. With numerical
+argument, <code class="docutils literal notranslate"><span class="pre">log_det</span></code> returns <code class="docutils literal notranslate"><span class="pre">-Inf</span></code> if these constraints are not
+met. Concave.</p>
+</dd>
+<dt>‡ <code class="docutils literal notranslate"><span class="pre">log_normcdf(x)</span></code></dt><dd><p>logarithm of cumulative distribution function of standard normal
+random variable. Concave and increasing. The current implementation
+is a fairly crude SDP-representable approximation, with modest
+accuracy over the interval <span class="math notranslate nohighlight">\([-4,4]\)</span>; we intend to replace it
+with a much better approximation at some point.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">log_prod(x)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(\log\prod_i x_i\)</span> if when <span class="math notranslate nohighlight">\(x\)</span> is positive; <span class="math notranslate nohighlight">\(-\infty\)</span> otherwise.
+Concave and nonincreasing. Equivalent to <code class="docutils literal notranslate"><span class="pre">sum_log(x)</span></code>.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">log_sum_exp(x)</span></code></dt><dd><p>the logarithm of the sum of the elementwise exponentials of <code class="docutils literal notranslate"><span class="pre">x</span></code>.
+Convex and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">logsumexp_sdp</span></code></dt><dd><p>a polynomial approximation to the log-sum-exp function with global
+absolute accuracy. This can be used to estimate the log-sum-exp
+function without using the successive approximation method.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">matrix_frac(x,Y)</span></code></dt><dd><p>matrix fractional function, <span class="math notranslate nohighlight">\(x^TY^{-1}x\)</span>. In CVX, imposes constraint
+that <span class="math notranslate nohighlight">\(Y\)</span> is symmetric (or Hermitian) and positive definite; outside CVX,
+returns <span class="math notranslate nohighlight">\(+\infty\)</span> unless <span class="math notranslate nohighlight">\(Y=Y^T\succ 0\)</span>. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">norm_largest(x,k)</span></code></dt><dd><p>For real and complex vectors, returns the sum of the largest <code class="docutils literal notranslate"><span class="pre">k</span></code>
+<em>magnitudes</em> in the vector <code class="docutils literal notranslate"><span class="pre">x</span></code>. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">norm_nuc(X)</span></code></dt><dd><p>The sum of the singular values of a real or complex matrix <code class="docutils literal notranslate"><span class="pre">X</span></code>.
+(This is the dual of the usual spectral matrix norm, <em>i.e.</em>, the
+largest singular value.) Convex.</p>
+</dd>
+<dt>‡ <code class="docutils literal notranslate"><span class="pre">norms(x,p,dim)</span></code>, <code class="docutils literal notranslate"><span class="pre">norms_largest(x,k,dim)</span></code></dt><dd><p>Computes <em>vector</em> norms along a specified dimension of a matrix or
+N-d array. Useful for sum-of-norms and max-of-norms problems.
+Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">poly_env(p,x)</span></code></dt><dd><p>Computes the value of the <em>convex or concave envelope</em> of the
+polynomial described by <code class="docutils literal notranslate"><span class="pre">p</span></code> (in the <code class="docutils literal notranslate"><span class="pre">polyval</span></code> sense). <code class="docutils literal notranslate"><span class="pre">p</span></code> must
+be a real constant vector whose length <code class="docutils literal notranslate"><span class="pre">n</span></code> is 0, 1, 2, 3, or some
+other <em>odd</em> length; and <code class="docutils literal notranslate"><span class="pre">x</span></code> must be real and affine. The sign of
+the first nonzero element of <code class="docutils literal notranslate"><span class="pre">p</span></code> determines whether a convex
+(positive) or concave (negative) envelope is constructed. For
+example, consider the function <span class="math notranslate nohighlight">\(p(x)\triangleq (x^2-1)^2=x^4-2x^2+1\)</span>,
+depicted along with its convex envelope in the figure below.</p>
+<p>The two coincide when <span class="math notranslate nohighlight">\(|x|\geq 1\)</span>, but deviate when
+<span class="math notranslate nohighlight">\(|x|&lt;1\)</span>. Attempting to call <code class="docutils literal notranslate"><span class="pre">polyval([1,0,2,0,1],x)</span></code> in a
+CVX model would yield an error, but a call to <code class="docutils literal notranslate"><span class="pre">poly_env([1,0,2,0,1],x)</span></code>
+yields a valid representation of the envelope. For convex or concave
+polynomials, this function produces the same result as <code class="docutils literal notranslate"><span class="pre">polyval</span></code>.</p>
+<figure class="align-default" id="id4">
+<img alt="_images/envelope.pdf" src="_images/envelope.pdf" />
+<figcaption>
+<p><span class="caption-text">The polynomial function <span class="math notranslate nohighlight">\(p(x)=x^4-2x^2+1\)</span> and its convex envelope.</span><a class="headerlink" href="#id4" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">pos(x)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(\max\{x,0\}\)</span>, for real <span class="math notranslate nohighlight">\(x\)</span>. Convex and increasing.</p>
+</dd>
+<dt>‡ <code class="docutils literal notranslate"><span class="pre">pow_abs(x,p)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(|x|^p\)</span> for <span class="math notranslate nohighlight">\(x\in\mathbf{R}\)</span> or <span class="math notranslate nohighlight">\(x\in\mathbf{C}\)</span>
+and <span class="math notranslate nohighlight">\(p\geq 1\)</span>. Convex.</p>
+</dd>
+<dt>‡ <code class="docutils literal notranslate"><span class="pre">pow_pos(x,p)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(\max\{x,0\}^p\)</span> for <span class="math notranslate nohighlight">\(x\in\mathbf{R}\)</span> and
+<span class="math notranslate nohighlight">\(p\geq 1\)</span>. Convex and nondecreasing.</p>
+</dd>
+<dt>‡ <code class="docutils literal notranslate"><span class="pre">pow_p(x,p)</span></code></dt><dd><p>for <span class="math notranslate nohighlight">\(x\in\mathbf{R}\)</span> and real constant <span class="math notranslate nohighlight">\(p\)</span>, computes nonnegative convex
+and concave branches of the power function:</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{array}{ccl}
+        p\leq 0 &amp; f_p(x) \triangleq \begin{cases} x^p &amp; x &gt; 0 \\ +\infty &amp; x \leq 0 \end{cases} &amp; \text{convex, nonincreasing} \\
+        0 &lt; p \leq 1 &amp; f_p(x) \triangleq \begin{cases} x^p &amp; x \geq 0 \\ -\infty &amp; x &lt; 0 \end{cases} &amp; \text{concave, nondecreasing} \\
+        p \geq 1 &amp; f_p(x) \triangleq \begin{cases} x^p &amp; x \geq 0 \\ +\infty &amp; x &lt; 0 \end{cases} &amp; \text{convex, nonmonotonic}
+\end{array}\end{split}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">prod_inv(x)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(\prod_i x_i^{-1}\)</span> when <span class="math notranslate nohighlight">\(x\)</span> is positive; <span class="math notranslate nohighlight">\(+\infty\)</span> otherwise. Convex
+and nonincreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">quad_form(x,P)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(x^TPx\)</span> for real <span class="math notranslate nohighlight">\(x\)</span> and symmetric <span class="math notranslate nohighlight">\(P\)</span>, and
+<span class="math notranslate nohighlight">\(x^HPx\)</span> for complex <span class="math notranslate nohighlight">\(x\)</span> and Hermitian <span class="math notranslate nohighlight">\(P\)</span>. Convex
+in <span class="math notranslate nohighlight">\(x\)</span> for <span class="math notranslate nohighlight">\(P\)</span> constant and positive semidefinite;
+concave in <span class="math notranslate nohighlight">\(x\)</span> for <span class="math notranslate nohighlight">\(P\)</span> constant and negative
+semidefinite.</p>
+</dd>
+</dl>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Quadratic functions such as <code class="docutils literal notranslate"><span class="pre">quad_form</span></code>, <code class="docutils literal notranslate"><span class="pre">sum_square</span></code> can often be replaced
+by the <code class="docutils literal notranslate"><span class="pre">norm</span></code> function without sacrificing equivalence. For numerical reasons,
+this alternate formulation is <em>preferred</em>. Please see <a class="reference internal" href="advanced.html#quad-forms"><span class="std std-ref">Eliminating quadratic forms</span></a> for
+more information.</p>
+</div>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">quad_over_lin(x,y)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(x^Tx/y\)</span> for <span class="math notranslate nohighlight">\(x \in \mathbf{R}^n\)</span>, <span class="math notranslate nohighlight">\(y &gt;0\)</span>; for
+<span class="math notranslate nohighlight">\(x \in \mathbf{C}^n\)</span>, <span class="math notranslate nohighlight">\(y&gt;0\)</span>, <span class="math notranslate nohighlight">\(x^*x/y\)</span>. In CVX
+specification, adds constraint that <span class="math notranslate nohighlight">\(y&gt;0\)</span>. Outside CVX
+specification, returns <span class="math notranslate nohighlight">\(+\infty\)</span> if <span class="math notranslate nohighlight">\(y\leq 0\)</span>. Convex,
+and decreasing in <span class="math notranslate nohighlight">\(y\)</span>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">quad_pos_over_lin(x,y)</span></code></dt><dd><p><code class="docutils literal notranslate"><span class="pre">sum_square_pos(</span> <span class="pre">x</span> <span class="pre">)/y</span></code> for <span class="math notranslate nohighlight">\(x\in\mathbf{R}^n\)</span>, <span class="math notranslate nohighlight">\(y&gt;0\)</span>.
+Convex, increasing in <span class="math notranslate nohighlight">\(x\)</span>, and decreasing in <span class="math notranslate nohighlight">\(y\)</span>.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">rel_entr(x)</span></code></dt><dd><p>Scalar relative entropy; <code class="docutils literal notranslate"><span class="pre">rel_entr(x,y)=x.*log(x/y)</span></code>. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sigma_max</span></code></dt><dd><p>maximum singular value of real or complex matrix. Same as <code class="docutils literal notranslate"><span class="pre">norm</span></code>.
+Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">square</span></code></dt><dd><p><span class="math notranslate nohighlight">\(x^2\)</span> for <span class="math notranslate nohighlight">\(x \in \mathbf{R}\)</span>. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">square_abs</span></code></dt><dd><p><span class="math notranslate nohighlight">\(|x|^2\)</span> for <span class="math notranslate nohighlight">\(x\in\mathbf{R}\)</span> or <span class="math notranslate nohighlight">\(x\in\mathbf{C}\)</span>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">square_pos</span></code></dt><dd><p><span class="math notranslate nohighlight">\(\max\{x,0\}^2\)</span> for <span class="math notranslate nohighlight">\(x\in\mathbf{R}\)</span>. Convex and
+increasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sum_largest(x,k)</span></code></dt><dd><p>sum of the largest <span class="math notranslate nohighlight">\(k\)</span> values, for real vector <span class="math notranslate nohighlight">\(x\)</span>. Convex and nondecreasing.</p>
+</dd>
+<dt>† <code class="docutils literal notranslate"><span class="pre">sum_log(x)</span></code></dt><dd><p><span class="math notranslate nohighlight">\(\sum_i\log(x_i)\)</span> when <span class="math notranslate nohighlight">\(x\)</span> is positive; <span class="math notranslate nohighlight">\(-\infty\)</span> otherwise.
+Concave and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sum_smallest(x,k)</span></code></dt><dd><p>sum of the smallest <span class="math notranslate nohighlight">\(k\)</span> values, <em>i.e.</em>, equivalent to <code class="docutils literal notranslate"><span class="pre">-sum_largest(-x,k)</span></code>. Concave and nondecreasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sum_square</span></code></dt><dd><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">sum(square(x))</span></code>, but more efficient. Convex. Works only for real values.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sum_square_abs</span></code></dt><dd><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">sum(square_abs(x))</span></code>, but more efficient. Convex.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">sum_square_pos</span></code></dt><dd><p>Equivalent to <code class="docutils literal notranslate"><span class="pre">sum(square_pos(x))</span></code>, but more efficient. Works only for real values.
+Convex and increasing.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">trace_inv(X)</span></code></dt><dd><p>trace of the inverse of an SPD matrix <code class="docutils literal notranslate"><span class="pre">X</span></code>, which is the same as
+the sum of the inverses of the eigenvalues. Convex. Outside of
+CVX, returns <code class="docutils literal notranslate"><span class="pre">+Inf</span></code> if argument is not positive definite.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">trace_sqrtm(X)</span></code></dt><dd><p>trace of the matrix square root of a positive semidefinite matrix
+<code class="docutils literal notranslate"><span class="pre">X</span></code>. which is the same as the sum of the squareroots of the
+eigenvalues. Concave. Outside of CVX, returns <code class="docutils literal notranslate"><span class="pre">+Inf</span></code> if
+argument is not positive semidefinite.</p>
+</dd>
+</dl>
+</section>
+<section id="sets">
+<span id="sets-ref"></span><h2>Sets<a class="headerlink" href="#sets" title="Permalink to this heading">¶</a></h2>
+<p>CVX currently supports the following sets; in each case, <code class="docutils literal notranslate"><span class="pre">n</span></code> is a
+positive integer constant.</p>
+<dl>
+<dt><code class="docutils literal notranslate"><span class="pre">nonnegative(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[R^n_+ \triangleq \left\{\,x\in\mathbf{R}^n\,~|~\,x_i\geq 0,~i=1,2,\dots,n\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">simplex(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[R^n_{1+} \triangleq \left\{\,x\in\mathbf{R}^n\,~|~\,x_i\geq 0,~i=1,2,\dots,n,~\textstyle\sum_ix_i=1\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">lorentz(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{Q}^n \triangleq \left\{\,(x,y)\in\mathbf{R}^n\times\mathbf{R}\,~|~\,\|x\|_2\leq y\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">rotated_lorentz(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{Q}^n_r \triangleq \left\{\,(x,y,z)\in\mathbf{R}^n\times\mathbf{R}\times\mathbf{R}\,~|~\,\|x\|_2\leq \sqrt{yz},~y,z\geq 0\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">complex_lorentz(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{Q}^n_c \triangleq \left\{\,(x,y)\in\mathbf{C}^n\times\mathbf{R}\,~|~\,\|x\|_2\leq y\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">rotated_complex_lorentz(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{Q}^n_{rc} \triangleq \left\{\,(x,y,z)\in\mathbf{C}^n\times\mathbf{R}\times\mathbf{R}\,~|~\,\|x\|_2\leq \sqrt{yz},~y,z\geq 0\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">semidefinite(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{S}^n_+ \triangleq \left\{\,X\in\mathbf{R}^{n\times n}\,~|~\,X=X^T,~X\succeq 0\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">hermitian_semidefinite(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{H}^n_+ \triangleq \left\{\,Z\in\mathbf{C}^{n\times n}\,~|~\,Z=Z^H,~Z\succeq 0\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">nonneg_poly_coeffs(n)</span></code></dt><dd><p>The cone of all coefficients of nonnegative polynomials of degree <span class="math notranslate nohighlight">\(n\)</span>; <span class="math notranslate nohighlight">\(n\)</span> must be even:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{P}_{+,n} \triangleq \left\{\,p\in\mathbf{R}^n[n+1]\,~|~\,\sum_{i=0}^n p_{i+1} x^{n-i} \geq 0 ~ \forall x\in\mathbf{R}\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">convex_poly_coeffs(n)</span></code></dt><dd><p>The cone of all coefficients of convex polynomials of degree <span class="math notranslate nohighlight">\(n\)</span>; <span class="math notranslate nohighlight">\(n\)</span> must be even:</p>
+<div class="math notranslate nohighlight">
+\[\mathbf{P}_{+,n} \triangleq \left\{\,p\in\mathbf{R}^n[n+1]\,~|~\,\sum_{i=0}^{n-2} (n-i)(n-i-1) p_{i+1} x^{n-i-2} \geq 0 ~ \forall x\in\mathbf{R}\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">exp_cone</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{E} \triangleq \text{cl}\left\{\,(x,y,z)\in\mathbf{R}\times\mathbf{R}\times\mathbf{R}\,~|~\,y&gt;0,~ye^{x/y}\leq z\,\right\}\]</div>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">geo_mean_cone(n)</span></code></dt><dd><div class="math notranslate nohighlight">
+\[\mathbf{G}_n \triangleq \text{cl}\left\{\,(x,y)\in\mathbf{R}^n\times\mathbf{R}^n\times\mathbf{R}^n\,~|~\,x\geq 0,~(\prod_{i=1}^n x_i)^{1/n} \geq y\,\right\}\]</div>
+</dd>
+</dl>
+</section>
+<section id="commands">
+<h2>Commands<a class="headerlink" href="#commands" title="Permalink to this heading">¶</a></h2>
+<dl class="simple">
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_begin</span></code></dt><dd><p>Begins a new CVX model. If a model is already in progress, it will issue a warning
+and clear it. See <a class="reference internal" href="basics.html#begin-end"><span class="std std-ref">cvx_begin and cvx_end</span></a> for a full description, including the modifying
+keywords that control solver output, SDP mode, GDP mode, etc.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_clear</span></code></dt><dd><p>Clears any model being constructed. Useful when an error has been made and it is
+necessary to start from the beginning. Whereas <code class="docutils literal notranslate"><span class="pre">cvx_begin</span></code> issues a warning if
+called with a model in progress, <code class="docutils literal notranslate"><span class="pre">cvx_clear</span></code> is silent.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_end</span></code></dt><dd><p>Signals the end of a CVX model. In typical use, this instructs CVX to begin the solution process.
+See <a class="reference internal" href="basics.html#begin-end"><span class="std std-ref">cvx_begin and cvx_end</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_expert</span></code></dt><dd><p>Controls the issuance of warnings when models requiring the use of successive
+approximation are employed; see <a class="reference internal" href="advanced.html#successive"><span class="std std-ref">The successive approximation method</span></a> more details.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_power_warning</span></code></dt><dd><p>Controls if and when CVX issues warnings during the construction of models involving
+rational power functions (i.e., <code class="docutils literal notranslate"><span class="pre">x^p</span></code>, where <code class="docutils literal notranslate"><span class="pre">x</span></code> is a variable and <code class="docutils literal notranslate"><span class="pre">p</span></code> is a constant);
+see <a class="reference internal" href="advanced.html#powerfunc"><span class="std std-ref">Power functions and p-norms</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_precision</span></code></dt><dd><p>Controls solver precision; see <a class="reference internal" href="solver.html#solver-precision"><span class="std std-ref">Controlling precision</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_quiet</span></code></dt><dd><p>Enables or disables screen output during the solution process; see <a class="reference internal" href="solver.html#solver-output"><span class="std std-ref">Controlling screen output</span></a>.
+Also see <a class="reference internal" href="basics.html#begin-end"><span class="std std-ref">cvx_begin and cvx_end</span></a> for the newer, preferred syntax <code class="docutils literal notranslate"><span class="pre">cvx_begin</span> <span class="pre">quiet</span></code>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_save_prefs</span></code></dt><dd><p>Saves the current states for <code class="docutils literal notranslate"><span class="pre">cvx_expert</span></code>, <code class="docutils literal notranslate"><span class="pre">cvx_power_warning</span></code>, <code class="docutils literal notranslate"><span class="pre">cvx_precision</span></code>,
+and <code class="docutils literal notranslate"><span class="pre">cvx_solver</span></code> to disk, so that their values are retained when quitting and
+re-starting MATLAB. The file is saved in MATLAB’s preference directory, which can
+be located by typing the <code class="docutils literal notranslate"><span class="pre">prefdir</span></code> command.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_setup</span></code></dt><dd><p>The setup script used to install and configure CVX; see <a class="reference internal" href="install.html#install"><span class="std std-ref">Installation</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_solver</span></code></dt><dd><p>Selects the solver to be employed when solving CVX models; see <a class="reference internal" href="solver.html#solver-selection"><span class="std std-ref">Selecting a solver</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_solver_settings</span></code></dt><dd><p>Allows the user to deliver advanced, solver-specific settings to the solver that CVX
+does not otherwise support; see <a class="reference internal" href="solver.html#solver-settings"><span class="std std-ref">Advanced solver settings</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_version</span></code></dt><dd><p>Prints information about the current versions of CVX, Matlab, and the operating system.
+When submitting bug reports, please include the output of this command.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">cvx_where</span></code></dt><dd><p>Returns the directory where CVX is installed.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">dual</span> <span class="pre">variable</span></code>, <code class="docutils literal notranslate"><span class="pre">dual</span> <span class="pre">variables</span></code></dt><dd><p>Creates one or more dual variables to be connected to constraints in the current model;
+see <a class="reference internal" href="basics.html#dual-variables"><span class="std std-ref">Dual variables</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">expression</span></code>, <code class="docutils literal notranslate"><span class="pre">expressions</span></code></dt><dd><p>Creates one or more expression holders; see <a class="reference internal" href="basics.html#assignment"><span class="std std-ref">Assignment and expression holders</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">maximise</span></code>, <code class="docutils literal notranslate"><span class="pre">maximize</span></code></dt><dd><p>Specifies a maximization objective; see <a class="reference internal" href="basics.html#objectives"><span class="std std-ref">Objective functions</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">minimise</span></code>, <code class="docutils literal notranslate"><span class="pre">minimize</span></code></dt><dd><p>Specifies a minimization objective; see <a class="reference internal" href="basics.html#objectives"><span class="std std-ref">Objective functions</span></a>.</p>
+</dd>
+<dt><code class="docutils literal notranslate"><span class="pre">variable</span></code>, <code class="docutils literal notranslate"><span class="pre">variables</span></code></dt><dd><p>Creates one or more variables for use in the current CVX model; see <a class="reference internal" href="basics.html#variables"><span class="std std-ref">Variables</span></a>.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        <p class="logo"><a href="index.html" title="index">
+          <img class="logo" src="_static/cvxrlogo.png" alt="Logo"/>
+        </a></p><div class="sphinx-toc sphinxlocaltoc">
+    <h3><a href="index.html">Page contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">Reference guide</a><ul>
+<li><a class="reference internal" href="#arithmetic-operators">Arithmetic operators</a></li>
+<li><a class="reference internal" href="#built-in-functions">Built-in functions</a><ul>
+<li><a class="reference internal" href="#linear">Linear</a></li>
+<li><a class="reference internal" href="#nonlinear">Nonlinear</a></li>
+</ul>
+</li>
+<li><a class="reference internal" href="#new-functions">New functions</a></li>
+<li><a class="reference internal" href="#sets">Sets</a></li>
+<li><a class="reference internal" href="#commands">Commands</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div class="sphinxprev">
+    <h4>Previous page</h4>
+    <p class="topless"><a href="solver.html"
+                          title="Previous page">&larr; Solvers</a></p>
+  </div>
+  <div class="sphinxnext">
+    <h4>Next page</h4>
+    <p class="topless"><a href="support.html"
+                          title="Next page">&rarr; Support</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/funcref.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div><h3>Other links</h3>
+<ul class="this-page-menu">
+<li><a href="CVX.pdf" target="_blank">Download the PDF</a></li>
+<li><a href="http://cvxr.com/cvx">CVX home page</a></li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+    
+    
+        <div class="sidebar-toggle-group no-js">
+            
+            <button class="sidebar-toggle" id="sidebar-hide" title="Hide the sidebar menu">
+                 «
+                <span class="show-for-small">hide menu</span>
+                
+            </button>
+            <button class="sidebar-toggle" id="sidebar-show" title="Show the sidebar menu">
+                
+                <span class="show-for-small">menu</span>
+                <span class="hide-for-small">sidebar</span>
+                 »
+            </button>
+        </div>
+    
+      <div class="clearer"></div>
+    </div>
+    <div class="relbar-bottom">
+        
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="support.html" title="Support"
+             >next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="solver.html" title="Solvers"
+             >previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">CVX Users&#39; Guide</a> &#187;</li>
+
+        <li class="nav-item nav-item-this"><a href="">Reference guide</a></li> 
+      </ul>
+    </div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright © 2012, CVX Research, Inc..
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    </div>
+    <!-- cloud_sptheme 1.4 -->
+  </body>
+</html>

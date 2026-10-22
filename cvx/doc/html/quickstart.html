@@ -1,0 +1,617 @@
+
+
+
+<!DOCTYPE html>
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+    <title>A quick start &#8212; CVX Users&#39; Guide</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/cloud.css" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Noticia+Text:400,i,b,bi|Open+Sans:400,i,b,bi|Roboto+Mono:400,i,b,bi&amp;display=swap" type="text/css" />
+    
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+    
+    
+     
+        <script src="_static/jquery.cookie.js"></script>
+    
+
+    
+     
+        <script src="_static/cloud.base.js"></script>
+    
+
+    
+     
+        <script src="_static/cloud.js"></script>
+    
+
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="The Basics" href="basics.html" />
+    <link rel="prev" title="Installation" href="install.html" /> 
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+  </head><body>
+    <div class="relbar-top">
+        
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             accesskey="I">index</a></li>
+        <li class="right" >
+          <a href="basics.html" title="The Basics"
+             accesskey="N">next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="install.html" title="Installation"
+             accesskey="P">previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">CVX Users&#39; Guide</a> &#187;</li>
+
+        <li class="nav-item nav-item-this"><a href="">A quick start</a></li> 
+      </ul>
+    </div>
+    </div>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+            
+  <section id="a-quick-start">
+<span id="quickstart"></span><span id="index-0"></span><h1>A quick start<a class="headerlink" href="#a-quick-start" title="Permalink to this heading">¶</a></h1>
+<p>Once you have installed CVX (see <a class="reference internal" href="install.html#install"><span class="std std-ref">Installation</span></a>), you can start using it by
+entering a CVX <em>specification</em> into a Matlab script or function, or
+directly from the command prompt. To delineate CVX specifications
+from surrounding Matlab code, they are preceded with the statement
+<code class="docutils literal notranslate"><span class="pre">cvx_begin</span></code> and followed with the statement <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code>. A
+specification can include any ordinary Matlab statements, as well as
+special CVX-specific commands for declaring primal and dual
+optimization variables and specifying constraints and objective
+functions.</p>
+<p>Within a CVX specification, optimization variables have no numerical
+value; instead, they are special Matlab objects. This enables Matlab to
+distinguish between ordinary commands and CVX objective functions
+and constraints. As CVX reads a problem specification, it builds an
+internal representation of the optimization problem. If it encounters a
+violation of the rules of disciplined convex programming (such as an
+invalid use of a composition rule or an invalid constraint), an error
+message is generated. When Matlab reaches the <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> command, it
+completes the conversion of the CVX specification to a canonical
+form, and calls the underlying core solver to solve it.</p>
+<p>If the optimization is successful, the optimization variables declared
+in the CVX specification are converted from objects to ordinary
+Matlab numerical values that can be used in any further Matlab
+calculations. In addition, CVX also assigns a few other related
+Matlab variables. One, for example, gives the status of the problem (i.e.,
+whether an optimal solution was found, or the problem was determined to
+be infeasible or unbounded). Another gives the optimal value of the
+problem. Dual variables can also be assigned.</p>
+<p>This processing flow will become clearer as we introduce a number of
+simple examples. We invite the reader to actually follow along with
+these examples in Matlab, by running the <code class="docutils literal notranslate"><span class="pre">quickstart</span></code> script found in
+the <code class="docutils literal notranslate"><span class="pre">examples</span></code> subdirectory of the CVX distribution. For example,
+if you are on Windows, and you have installed the CVX distribution
+in the directory <code class="docutils literal notranslate"><span class="pre">D:\Matlab\cvx</span></code>, then you would type</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cd D:\Matlab\cvx\examples
+quickstart
+</pre></div>
+</div>
+<p>at the Matlab command prompt. The script will automatically print key
+excerpts of its code, and pause periodically so you can examine its
+output. (Pressing “Enter” or “Return” resumes progress.)</p>
+<section id="least-squares">
+<span id="index-1"></span><h2>Least squares<a class="headerlink" href="#least-squares" title="Permalink to this heading">¶</a></h2>
+<p>We first consider the most basic convex optimization problem,
+least-squares (also known as linear regression). In a least-squares problem, we seek
+<span class="math notranslate nohighlight">\(x \in \mathbf{R}^n\)</span> that minimizes <span class="math notranslate nohighlight">\(\|Ax-b\|_2\)</span>, where
+<span class="math notranslate nohighlight">\(A\in \mathbf{R}^{m \times n}\)</span> is skinny and full rank (i.e.,
+<span class="math notranslate nohighlight">\(m\geq n\)</span> and <span class="math notranslate nohighlight">\(\operatorname*{\textbf{Rank}}(A)=n\)</span>). Let us
+create the data for a small test problem in Matlab:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>m = 16; n = 8;
+A = randn(m,n);
+b = randn(m,1);
+</pre></div>
+</div>
+<p>Then the least-squares solution <span class="math notranslate nohighlight">\(x=(A^TA)^{-1}A^Tb\)</span> is
+easily computed using the backslash operator:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>x_ls = A \ b;
+</pre></div>
+</div>
+<p>Using CVX, the same problem can be solved as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_begin
+    variable x(n)
+    minimize( norm(A*x-b) )
+cvx_end
+</pre></div>
+</div>
+<p>(The indentation is used for purely stylistic reasons and is optional.)
+Let us examine this specification line by line:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cvx_begin</span></code> creates a placeholder for the new CVX
+specification, and prepares Matlab to accept variable declarations,
+constraints, an objective function, and so forth.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">variable</span> <span class="pre">x(n)</span></code> declares <code class="docutils literal notranslate"><span class="pre">x</span></code> to be an optimization variable of
+dimension <span class="math notranslate nohighlight">\(n\)</span>. CVX requires that all problem variables be
+declared before they are used in the objective function or
+constraints.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">minimize(</span> <span class="pre">norm(A*x-b)</span> <span class="pre">)</span></code> specifies the objective function to be
+minimized.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> signals the end of the CVX specification, and causes
+the problem to be solved.</p></li>
+</ul>
+<p>Clearly there is no reason to use
+CVX to solve a simple least-squares problem. But this example serves
+as sort of a “Hello world!” program in CVX; i.e., the simplest code
+segment that actually does something useful.</p>
+<p>When Matlab reaches the <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> command, the least-squares problem
+is solved, and the Matlab variable <code class="docutils literal notranslate"><span class="pre">x</span></code> is overwritten with the
+solution of the least-squares problem, i.e., <span class="math notranslate nohighlight">\((A^TA)^{-1}A^Tb\)</span>. Now
+<code class="docutils literal notranslate"><span class="pre">x</span></code> is an ordinary length-<span class="math notranslate nohighlight">\(n\)</span> numerical vector, identical to
+what would be obtained in the traditional approach, at least to within
+the accuracy of the solver. In addition, several additional Matlab
+variables are created; for instance,</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">cvx_optval</span></code> contains the value of the objective function;</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">cvx_status</span></code> contains a string describing the status of the
+calculation (see <a class="reference internal" href="solver.html#interpreting"><span class="std std-ref">Interpreting the results</span></a>).</p></li>
+</ul>
+<p>All of these quantities—<code class="docutils literal notranslate"><span class="pre">x</span></code>, <code class="docutils literal notranslate"><span class="pre">cvx_optval</span></code>, and <code class="docutils literal notranslate"><span class="pre">cvx_status</span></code>,
+<em>etc.</em>—may now be freely used in other Matlab statements, just like
+any other numeric or string values. <a class="footnote-reference brackets" href="#id4" id="id1" role="doc-noteref"><span class="fn-bracket">[</span>1<span class="fn-bracket">]</span></a></p>
+<p>There is not much room for error in specifying a simple least-squares
+problem, but if you make one, you will get an error or warning message.
+For example, if you replace the objective function with</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>maximize( norm(A*x-b) );
+</pre></div>
+</div>
+<p>which asks for the norm to be maximized, you will get an error message
+stating that a convex function cannot be maximized (at least in
+disciplined convex programming):</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>??? Error using ==&gt; maximize
+Disciplined convex programming error:
+Objective function in a maximization must be concave.
+</pre></div>
+</div>
+</section>
+<section id="bound-constrained-least-squares">
+<span id="index-2"></span><h2>Bound-constrained least squares<a class="headerlink" href="#bound-constrained-least-squares" title="Permalink to this heading">¶</a></h2>
+<p>Suppose we wish to add some simple upper and lower bounds to the
+least-squares problem above: <em>i.e</em>.,</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\begin{array}{ll}
+    \mbox{minimize} &amp; \|Ax-b\|_2\\
+    \mbox{subject to} &amp; l \preceq x \preceq u
+\end{array}\end{split}\]</div>
+<p>where <span class="math notranslate nohighlight">\(l\)</span> and <span class="math notranslate nohighlight">\(u\)</span> are given data vectors with the same
+dimension as <span class="math notranslate nohighlight">\(x\)</span>. The vector inequality
+<span class="math notranslate nohighlight">\(u \preceq v\)</span> means componentwise, i.e., <span class="math notranslate nohighlight">\(u_i \leq v_i\)</span> for
+all <span class="math notranslate nohighlight">\(i\)</span>. We can no longer use the simple backslash notation to
+solve this problem, but it can be transformed into a quadratic program
+(QP) which can be solved without difficulty with a standard QP solver. <a class="footnote-reference brackets" href="#id5" id="id2" role="doc-noteref"><span class="fn-bracket">[</span>2<span class="fn-bracket">]</span></a></p>
+<p>Let us provide some numeric values for <code class="docutils literal notranslate"><span class="pre">l</span></code> and <code class="docutils literal notranslate"><span class="pre">u</span></code>:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>bnds = randn(n,2);
+l = min( bnds, [], 2 );
+u = max( bnds, [], 2 );
+</pre></div>
+</div>
+<p>If you have the <a class="reference external" href="http://www.mathworks.com/products/optimization">Matlab Optimization
+Toolbox</a>, you can use <code class="docutils literal notranslate"><span class="pre">quadprog</span></code>
+to solve the problem as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>x_qp = quadprog( 2*A&#39;*A, -2*A&#39;*b, [], [], [], [], l, u );
+</pre></div>
+</div>
+<p>This actually minimizes the square of the norm, which is the same as
+minimizing the norm itself. In contrast, the CVX specification is
+given by</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_begin
+    variable x(n)
+    minimize( norm(A*x-b) )
+    subject to
+        l &lt;= x &lt;= u
+cvx_end
+</pre></div>
+</div>
+<p>Two new lines of CVX code have been added to the CVX specification:</p>
+<ul class="simple">
+<li><p>The <code class="docutils literal notranslate"><span class="pre">subject</span> <span class="pre">to</span></code> statement does nothing—CVX provides this
+statement simply to make specifications more readable. As with
+indentation, it is optional.</p></li>
+<li><p>The line <code class="docutils literal notranslate"><span class="pre">l</span> <span class="pre">&lt;=</span> <span class="pre">x</span> <span class="pre">&lt;=</span> <span class="pre">u</span></code> represents the <span class="math notranslate nohighlight">\(2n\)</span> inequality
+constraints.</p></li>
+</ul>
+<p>As before, when the <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> command is reached, the problem is
+solved, and the numerical solution is assigned to the variable <code class="docutils literal notranslate"><span class="pre">x</span></code>.
+Incidentally, CVX will <em>not</em> transform this problem into a QP by
+squaring the objective; instead, it will transform it into an SOCP. The
+result is the same, and the transformation is done automatically.</p>
+<p>In this example, as in our first, the CVX specification is longer
+than the Matlab alternative. On the other hand, it is easier to read the
+CVX version and relate it to the original problem. In contrast, the
+<code class="docutils literal notranslate"><span class="pre">quadprog</span></code> version requires us to know in advance the transformation
+to QP form, including the calculations such as <code class="docutils literal notranslate"><span class="pre">2*A'*A</span></code> and
+<code class="docutils literal notranslate"><span class="pre">-2*A'*b</span></code>. For all but the simplest cases, a CVX specification is
+simpler, more readable, and more compact than equivalent Matlab code to
+solve the same problem.</p>
+</section>
+<section id="other-norms-and-functions">
+<h2>Other norms and functions<a class="headerlink" href="#other-norms-and-functions" title="Permalink to this heading">¶</a></h2>
+<p id="index-3">Now let us consider some alternatives to the least-squares problem. Norm
+minimization problems involving the <span class="math notranslate nohighlight">\(\ell_\infty\)</span> or
+<span class="math notranslate nohighlight">\(\ell_1\)</span> norms can be reformulated as LPs, and solved using a
+linear programming solver such as <code class="docutils literal notranslate"><span class="pre">linprog</span></code> in the Matlab Optimization
+Toolbox; see, <em>e.g.</em>, Section 6.1 of <a class="reference external" href="http://www.stanford.edu/~boyd/cvxbook">Convex
+Optimization</a>. However,
+because these norms are part of CVX’s base library of functions,
+CVX can handle these problems directly.</p>
+<p>For example, to find the value of <span class="math notranslate nohighlight">\(x\)</span> that minimizes the Chebyshev
+norm <span class="math notranslate nohighlight">\(\|Ax-b\|_\infty\)</span>, we can employ the <code class="docutils literal notranslate"><span class="pre">linprog</span></code> command from
+the Matlab Optimization Toolbox:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>f    = [ zeros(n,1); 1          ];
+Ane  = [ +A,         -ones(m,1)  ; ...
+         -A,         -ones(m,1) ];
+bne  = [ +b;         -b         ];
+xt   = linprog(f,Ane,bne);
+x_cheb = xt(1:n,:);
+</pre></div>
+</div>
+<p>With CVX, the same problem is specified as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_begin
+    variable x(n)
+    minimize( norm(A*x-b,Inf) )
+cvx_end
+</pre></div>
+</div>
+<p>The code based on <code class="docutils literal notranslate"><span class="pre">linprog</span></code>, and the CVX specification above will
+both solve the Chebyshev norm minimization problem, i.e., each will
+produce an <span class="math notranslate nohighlight">\(x\)</span> that minimizes <span class="math notranslate nohighlight">\(\|Ax-b\|_\infty\)</span>. Chebyshev
+norm minimization problems can have multiple optimal points, however, so
+the particular <span class="math notranslate nohighlight">\(x\)</span>’s produced by the two methods can be different.
+The two points, however, must have the same value of
+<span class="math notranslate nohighlight">\(\|Ax-b\|_\infty\)</span>.</p>
+<p>Similarly, to minimize the <span class="math notranslate nohighlight">\(\ell_1\)</span> norm <span class="math notranslate nohighlight">\(\|\cdot\|_1\)</span>, we
+can use <code class="docutils literal notranslate"><span class="pre">linprog</span></code> as follows:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>f    = [ zeros(n,1); ones(m,1);  ones(m,1)  ];
+Aeq  = [ A,          -eye(m),    +eye(m)    ];
+lb   = [ -Inf(n,1);  zeros(m,1); zeros(m,1) ];
+xzz  = linprog(f,[],[],Aeq,b,lb,[]);
+x_l1 = xzz(1:n,:) - xzz(n+1:end,:);
+</pre></div>
+</div>
+<p>The CVX version is, not surprisingly,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_begin
+    variable x(n)
+    minimize( norm(A*x-b,1) )
+cvx_end
+</pre></div>
+</div>
+<p>CVX automatically transforms both of these problems into LPs, not
+unlike those generated manually for <code class="docutils literal notranslate"><span class="pre">linprog</span></code>.</p>
+<p>The advantage that automatic transformation provides is magnified if we
+consider functions (and their resulting transformations) that are less
+well-known than the <span class="math notranslate nohighlight">\(\ell_\infty\)</span> and <span class="math notranslate nohighlight">\(\ell_1\)</span> norms. For
+example, consider the norm</p>
+<div class="math notranslate nohighlight">
+\[\| Ax-b\|_{\mathrm{lgst},k} = |Ax-b|_{[1]}+ \cdots + |Ax-b|_{[k]},\]</div>
+<p>where <span class="math notranslate nohighlight">\(|Ax-b|_{[i]}\)</span> denotes the <span class="math notranslate nohighlight">\(i\)</span>th largest element of
+the absolute values of the entries of <span class="math notranslate nohighlight">\(Ax-b\)</span>. This is indeed a
+norm, albeit a fairly esoteric one. (When <span class="math notranslate nohighlight">\(k=1\)</span>, it reduces to the
+<span class="math notranslate nohighlight">\(\ell_\infty\)</span> norm; when <span class="math notranslate nohighlight">\(k=m\)</span>, the dimension of
+<span class="math notranslate nohighlight">\(Ax-b\)</span>, it reduces to the <span class="math notranslate nohighlight">\(\ell_1\)</span> norm.) The problem of
+minimizing <span class="math notranslate nohighlight">\(\| Ax-b\|_{\mathrm{lgst},k}\)</span> over <span class="math notranslate nohighlight">\(x\)</span> can be
+cast as an LP, but the transformation is by no means obvious so we will
+omit it here. But this norm is provided in the base CVX library, and
+has the name <code class="docutils literal notranslate"><span class="pre">norm_largest</span></code>, so to specify and solve the problem using
+CVX is easy:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>k = 5;
+cvx_begin
+    variable x(n);
+    minimize( norm_largest(A*x-b,k) );
+cvx_end
+</pre></div>
+</div>
+<p>Unlike the <span class="math notranslate nohighlight">\(\ell_1\)</span>, <span class="math notranslate nohighlight">\(\ell_2\)</span>, or <span class="math notranslate nohighlight">\(\ell_\infty\)</span> norms,
+this norm is not part of the standard Matlab distribution. Once you have
+installed CVX, though, the norm is available as an ordinary Matlab
+function outside a CVX specification. For example, once the code
+above is processed, <code class="docutils literal notranslate"><span class="pre">x</span></code> is a numerical vector, so we can type</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_optval
+norm_largest(A*x-b,k)
+</pre></div>
+</div>
+<p>The first line displays the optimal value as determined by CVX; the
+second recomputes the same value from the optimal vector <code class="docutils literal notranslate"><span class="pre">x</span></code> as
+determined by CVX.</p>
+<p>The list of supported nonlinear functions in CVX goes well beyond
+<code class="docutils literal notranslate"><span class="pre">norm</span></code> and <code class="docutils literal notranslate"><span class="pre">norm_largest</span></code>. For example, consider the Huber penalty
+minimization problem</p>
+<div class="math notranslate nohighlight">
+\[\begin{array}{ll}
+    \text{minimize} &amp; \sum_{i=1}^m \phi( (Ax-b)_i )
+\end{array},\]</div>
+<p>with variable <span class="math notranslate nohighlight">\(x \in \mathbf{R}^n\)</span>, where <span class="math notranslate nohighlight">\(\phi\)</span> is the
+Huber penalty function</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}\phi(z) = \begin{cases} |z|^2 &amp; |z|\leq 1 \\ 2|z|-1 &amp; |z|\geq 1\end{cases}.\end{split}\]</div>
+<p>The Huber penalty function is convex, and has been provided in the
+CVX function library. So solving the Huber penalty minimization
+problem in CVX is simple:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_begin
+    variable x(n);
+    minimize( sum(huber(A*x-b)) );
+cvx_end
+</pre></div>
+</div>
+<p>CVX automatically transforms this problem into an SOCP, which the
+core solver then solves. (The CVX user, however, does not need to
+know how the transformation is carried out.)</p>
+</section>
+<section id="other-constraints">
+<h2>Other constraints<a class="headerlink" href="#other-constraints" title="Permalink to this heading">¶</a></h2>
+<p>We hope that, by now, it is not surprising that adding the simple
+bounds <span class="math notranslate nohighlight">\(l\preceq x\preceq u\)</span> to the problems above
+is as simple as inserting the line <code class="docutils literal notranslate"><span class="pre">l</span> <span class="pre">&lt;=</span> <span class="pre">x</span> <span class="pre">&lt;=</span> <span class="pre">u</span></code>
+before the <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> statement in each CVX specification. In fact,
+CVX supports more complex constraints as well. For example, let us
+define new matrices <code class="docutils literal notranslate"><span class="pre">C</span></code> and <code class="docutils literal notranslate"><span class="pre">d</span></code> in Matlab as follows,</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>p = 4;
+C = randn(p,n);
+d = randn(p,1);
+</pre></div>
+</div>
+<p>Now let us add an equality constraint and a nonlinear inequality
+constraint to the original least-squares problem:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>cvx_begin
+    variable x(n);
+    minimize( norm(A*x-b) );
+    subject to
+        C*x == d;
+        norm(x,Inf) &lt;= 1;
+cvx_end
+</pre></div>
+</div>
+<p>Both of the added constraints conform to the DCP rules, and so are
+accepted by CVX. After the <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> command, CVX converts
+this problem to an SOCP, and solves it.</p>
+<p>Expressions using comparison operators (<code class="docutils literal notranslate"><span class="pre">==</span></code>, <code class="docutils literal notranslate"><span class="pre">&gt;=</span></code>, <em>etc.</em>) behave
+quite differently when they involve CVX optimization variables, or
+expressions constructed from CVX optimization variables, than when
+they involve simple numeric values. For example, because <code class="docutils literal notranslate"><span class="pre">x</span></code> is a
+declared variable, the expression <code class="docutils literal notranslate"><span class="pre">C*x==d</span></code> causes a constraint to be
+included in the CVX specification, and returns no value at all. On
+the other hand, outside of a CVX specification, if <code class="docutils literal notranslate"><span class="pre">x</span></code> has an
+appropriate numeric value—for example immediately after the
+<code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> command—that same expression would return a vector of
+<code class="docutils literal notranslate"><span class="pre">1</span></code>s and <code class="docutils literal notranslate"><span class="pre">0</span></code>s, corresponding to the truth or falsity of each
+equality. <a class="footnote-reference brackets" href="#id6" id="id3" role="doc-noteref"><span class="fn-bracket">[</span>3<span class="fn-bracket">]</span></a> Likewise, within a CVX specification, the statement
+<code class="docutils literal notranslate"><span class="pre">norm(x,Inf)&lt;=1</span></code> adds a nonlinear constraint to the specification;
+outside of it, it returns a <code class="docutils literal notranslate"><span class="pre">1</span></code> or a <code class="docutils literal notranslate"><span class="pre">0</span></code> depending on the numeric
+value of <code class="docutils literal notranslate"><span class="pre">x</span></code> (specifically, whether its <span class="math notranslate nohighlight">\(\ell_\infty\)</span>-norm is
+less than or equal to, or more than, <span class="math notranslate nohighlight">\(1\)</span>).</p>
+<p>Because CVX is designed to support convex optimization, it must be
+able to verify that problems are convex. To that end, CVX adopts
+certain rules that govern how constraint and objective
+expressions are constructed. For example, CVX requires that the
+left- and right-hand sides of an equality constraint be affine. So a
+constraint such as</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>norm(x,Inf) == 1;
+</pre></div>
+</div>
+<p>results in the following error:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>??? Error using ==&gt; cvx.eq
+Disciplined convex programming error:
+Both sides of an equality constraint must be affine.
+</pre></div>
+</div>
+<p>Inequality constraints of the form <span class="math notranslate nohighlight">\(f(x) \leq g(x)\)</span> or
+<span class="math notranslate nohighlight">\(g(x) \geq f(x)\)</span> are accepted only if <span class="math notranslate nohighlight">\(f\)</span> can be verified as
+convex and <span class="math notranslate nohighlight">\(g\)</span> verified as concave. So a constraint such as</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>norm(x,Inf) &gt;= 1;
+</pre></div>
+</div>
+<p>results in the following error:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>??? Error using ==&gt; cvx.ge
+Disciplined convex programming error:
+The left-hand side of a &quot;&gt;=&quot; inequality must be concave.
+</pre></div>
+</div>
+<p>The specifics of the construction rules are discussed in more detail in
+<a class="reference internal" href="dcp.html#dcp"><span class="std std-ref">The DCP ruleset</span></a>. These rules are relatively intuitive if
+you know the basics of convex analysis and convex optimization.</p>
+</section>
+<section id="an-optimal-trade-off-curve">
+<h2>An optimal trade-off curve<a class="headerlink" href="#an-optimal-trade-off-curve" title="Permalink to this heading">¶</a></h2>
+<p>For our final example in this section, let us show how traditional
+Matlab code and CVX specifications can be mixed to form and solve
+multiple optimization problems. The following code solves the problem of
+minimizing <span class="math notranslate nohighlight">\(\|Ax-b\|_2 +\gamma \|x\|_1\)</span>, for a logarithmically
+spaced vector of (positive) values of <span class="math notranslate nohighlight">\(\gamma\)</span>. This gives us
+points on the optimal trade-off curve between <span class="math notranslate nohighlight">\(\|Ax-b\|_2\)</span> and
+<span class="math notranslate nohighlight">\(\|x\|_1\)</span>. An example of this curve is given in the figure below.</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>gamma = logspace( -2, 2, 20 );
+l2norm = zeros(size(gamma));
+l1norm = zeros(size(gamma));
+fprintf( 1, &#39;   gamma       norm(x,1)    norm(A*x-b)\n&#39; );
+fprintf( 1, &#39;---------------------------------------\n&#39; );
+for k = 1:length(gamma),
+    fprintf( 1, &#39;%8.4e&#39;, gamma(k) );
+    cvx_begin
+        variable x(n);
+        minimize( norm(A*x-b)+gamma(k)*norm(x,1) );
+    cvx_end
+    l1norm(k) = norm(x,1);
+    l2norm(k) = norm(A*x-b);
+    fprintf( 1, &#39;   %8.4e   %8.4e\n&#39;, l1norm(k), l2norm(k) );
+end
+plot( l1norm, l2norm );
+xlabel( &#39;norm(x,1)&#39; );
+ylabel( &#39;norm(A*x-b)&#39; );
+grid on
+</pre></div>
+</div>
+<figure class="align-default" id="id7">
+<img alt="_images/tradeoff.pdf" src="_images/tradeoff.pdf" />
+<figcaption>
+<p><span class="caption-text">An example trade-off curve from the <code class="docutils literal notranslate"><span class="pre">quickstart.m</span></code> demo.</span><a class="headerlink" href="#id7" title="Permalink to this image">¶</a></p>
+</figcaption>
+</figure>
+<p>The <code class="docutils literal notranslate"><span class="pre">minimize</span></code> statement above illustrates one of the construction
+rules to be discussed in <a class="reference internal" href="dcp.html#dcp"><span class="std std-ref">The DCP ruleset</span></a>. A basic
+principle of convex analysis is that a convex function can be multiplied
+by a nonnegative scalar, or added to another convex function, and the
+result is then convex. CVX recognizes such combinations and allows
+them to be used anywhere a simple convex function can be—such as an
+objective function to be minimized, or on the appropriate side of an
+inequality constraint. So in our example, the expression</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>norm(A*x-b)+gamma(k)*norm(x,1)
+</pre></div>
+</div>
+<p>is recognized as convex by CVX, as long as <code class="docutils literal notranslate"><span class="pre">gamma(k)</span></code> is positive
+or zero. If <code class="docutils literal notranslate"><span class="pre">gamma(k)</span></code> were negative, then this expression becomes the
+sum of a convex term and a concave term, which causes CVX to
+generate the following error:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>??? Error using ==&gt; cvx.plus
+Disciplined convex programming error:
+Addition of convex and concave terms is forbidden.
+</pre></div>
+</div>
+<aside class="footnote brackets" id="id4" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id1">1</a><span class="fn-bracket">]</span></span>
+<p>If you type <code class="docutils literal notranslate"><span class="pre">who</span></code> or <code class="docutils literal notranslate"><span class="pre">whos</span></code> at the command prompt, you may see
+other, unfamiliar variables as well. Any variable that begins with
+the prefix <code class="docutils literal notranslate"><span class="pre">cvx_</span></code> is reserved for internal use by <code class="docutils literal notranslate"><span class="pre">CVX</span></code> itself,
+and should not be changed.</p>
+</aside>
+<aside class="footnote brackets" id="id5" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id2">2</a><span class="fn-bracket">]</span></span>
+<p>There are also a number of solvers specifically designed to solve bound-constrained
+least-squares problems, such as <a class="reference external" href="http://www.cs.ubc.ca/~mpf/bcls/">BCLS by Michael Friedlander</a>.</p>
+</aside>
+<aside class="footnote brackets" id="id6" role="note">
+<span class="label"><span class="fn-bracket">[</span><a role="doc-backlink" href="#id3">3</a><span class="fn-bracket">]</span></span>
+<p>In fact, immediately after the <code class="docutils literal notranslate"><span class="pre">cvx_end</span></code> command above, you would
+likely find that most if not all of the values returned would be
+<code class="docutils literal notranslate"><span class="pre">0</span></code>. This is because, as is the case with many numerical
+algorithms, solutions are determined only to within some nonzero
+numeric tolerance. So the equality constraints will be satisfied
+closely, but often not exactly.</p>
+</aside>
+</section>
+</section>
+
+
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+        <p class="logo"><a href="index.html" title="index">
+          <img class="logo" src="_static/cvxrlogo.png" alt="Logo"/>
+        </a></p><div class="sphinx-toc sphinxlocaltoc">
+    <h3><a href="index.html">Page contents</a></h3>
+    <ul>
+<li><a class="reference internal" href="#">A quick start</a><ul>
+<li><a class="reference internal" href="#least-squares">Least squares</a></li>
+<li><a class="reference internal" href="#bound-constrained-least-squares">Bound-constrained least squares</a></li>
+<li><a class="reference internal" href="#other-norms-and-functions">Other norms and functions</a></li>
+<li><a class="reference internal" href="#other-constraints">Other constraints</a></li>
+<li><a class="reference internal" href="#an-optimal-trade-off-curve">An optimal trade-off curve</a></li>
+</ul>
+</li>
+</ul>
+
+  </div>
+  <div class="sphinxprev">
+    <h4>Previous page</h4>
+    <p class="topless"><a href="install.html"
+                          title="Previous page">&larr; Installation</a></p>
+  </div>
+  <div class="sphinxnext">
+    <h4>Next page</h4>
+    <p class="topless"><a href="basics.html"
+                          title="Next page">&rarr; The Basics</a></p>
+  </div>
+  <div role="note" aria-label="source link">
+    <h3>This Page</h3>
+    <ul class="this-page-menu">
+      <li><a href="_sources/quickstart.rst.txt"
+            rel="nofollow">Show Source</a></li>
+    </ul>
+   </div><h3>Other links</h3>
+<ul class="this-page-menu">
+<li><a href="CVX.pdf" target="_blank">Download the PDF</a></li>
+<li><a href="http://cvxr.com/cvx">CVX home page</a></li>
+</ul>
+
+
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>document.getElementById('searchbox').style.display = "block"</script>
+        </div>
+      </div>
+    
+    
+        <div class="sidebar-toggle-group no-js">
+            
+            <button class="sidebar-toggle" id="sidebar-hide" title="Hide the sidebar menu">
+                 «
+                <span class="show-for-small">hide menu</span>
+                
+            </button>
+            <button class="sidebar-toggle" id="sidebar-show" title="Show the sidebar menu">
+                
+                <span class="show-for-small">menu</span>
+                <span class="hide-for-small">sidebar</span>
+                 »
+            </button>
+        </div>
+    
+      <div class="clearer"></div>
+    </div>
+    <div class="relbar-bottom">
+        
+    <div class="related" role="navigation" aria-label="related navigation">
+      <h3>Navigation</h3>
+      <ul>
+        <li class="right" style="margin-right: 10px">
+          <a href="genindex.html" title="General Index"
+             >index</a></li>
+        <li class="right" >
+          <a href="basics.html" title="The Basics"
+             >next</a> &nbsp; &nbsp;</li>
+        <li class="right" >
+          <a href="install.html" title="Installation"
+             >previous</a> &nbsp; &nbsp;</li>
+    <li><a href="index.html">CVX Users&#39; Guide</a> &#187;</li>
+
+        <li class="nav-item nav-item-this"><a href="">A quick start</a></li> 
+      </ul>
+    </div>
+    </div>
+
+    <div class="footer" role="contentinfo">
+        &#169; Copyright © 2012, CVX Research, Inc..
+      Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 5.0.2.
+    </div>
+    <!-- cloud_sptheme 1.4 -->
+  </body>
+</html>
