@@ -63,7 +63,7 @@ Blockchain-enabled-UCMEC/
 
 ## How to run
 
-**Requirements:** MATLAB R2021b+ and the bundled CVX under `cvx/` (Apple Silicon `mexmaca64`).
+**Requirements:** MATLAB R2021b+ and the bundled CVX under `cvx/`.
 
 From the `scripts/` folder:
 
@@ -81,4 +81,4 @@ experiment_bandwidth
 plot_results
 ```
 
-Each sweep averages 8 nested seeds. Outputs land in `results/`; figures in `results/figures/`.
+Each sweep averages 8 nested seeds. Outputs land in `results/`; figures in `results/figures/`. The results might be a little bit different from the original paper since we have modified the realization and evaluation process. The system model, algorithms and the parameters are still align with the paper.
