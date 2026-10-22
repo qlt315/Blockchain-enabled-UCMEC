@@ -8,7 +8,7 @@ This is the updated version of the MATLAB evaluation code for [IEEE TCCN 1046031
 Blockchain-enabled-UCMEC/
 ├── README.md
 ├── .gitignore
-├── cvx/                 # CVX 2.2.2 (Apple Silicon mexmaca64 + SDPT3)
+├── cvx/                 # CVX
 ├── scripts/             # experiment drivers and plotter
 │   ├── lib/             # shared solvers and scenario builder
 │   ├── experiment_*.m
@@ -22,7 +22,7 @@ Blockchain-enabled-UCMEC/
 
 | Path | Role |
 | --- | --- |
-| `cvx/` | Bundled CVX 2.2.2. First run calls `cvx_setup` via `setup_path`. |
+| `cvx/` | Bundled CVX First run calls `cvx_setup` via `setup_path`. |
 | `scripts/` | One script per figure sweep, plus `plot_results`. |
 | `results/` | Saved `.mat` arrays and PNG figures under `results/figures/`. |
 
