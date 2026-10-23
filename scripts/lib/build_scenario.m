@@ -25,8 +25,9 @@ sc.Di = 1;
 sc.block_interval = 1;
 sc.q = 10;
 sc.gamma = 0.01;
-sc.tmax = 12;
+sc.tmax = 100;
 sc.verbose = false;
+sc.cvx_in_search = false;
 sc.seed = seed;
 
 names = fieldnames(override);
@@ -90,7 +91,9 @@ sc.rho = rho_pool(1:N);
 sc.Dt = Dt_pool(1:N);
 
 sc.verbose = false;
-sc.tmax = 12;
+if ~isfield(override, 'tmax')
+    sc.tmax = 100;
+end
 if ~isfield(override, 'q')
     sc.q = 10;
 end

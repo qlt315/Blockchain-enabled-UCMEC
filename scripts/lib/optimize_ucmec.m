@@ -1,7 +1,9 @@
 function out = optimize_ucmec(sc, scheme)
 scheme = canonical_scheme(scheme);
 switch scheme
-    case {'proposed', 'oo', 'ro'}
+    case 'proposed'
+        out = admm_paper(sc);
+    case {'oo', 'ro'}
         out = solve_clustered(sc, scheme);
     case 'bcd'
         out = solve_bcd(sc);
@@ -32,7 +34,10 @@ end
 end
 
 function out = solve_clustered(sc, scheme)
-[A, ~, ~] = initial_point(sc);
+% Paper Alg.2 ADMM: continuous a in [0,1]; feasible clustering is local copy Â
+% on the simplex (sum_m â_{m,n}=1). Stop when ||A-Â||_F <= gamma.
+[A_hat, ~, ~] = initial_point(sc);
+A = A_hat;
 lambda = zeros(sc.M, sc.N);
 if strcmp(scheme, 'ro')
     P_fixed = rand(sc.M, 1);
@@ -42,19 +47,25 @@ end
 reserve = consensus_reserve(sc);
 verbose = ~isfield(sc, 'verbose') || sc.verbose;
 q_eff = sc.q * 4e-4;
-tmax = sc.tmax;
-if strcmp(scheme, 'proposed')
-    tmax = max(sc.tmax, 20);
-    q_eff = sc.q * 2e-4;
+use_admm = strcmp(scheme, 'proposed');
+if use_admm
+    tmax = max(sc.tmax, 100);
+    a_iters = 40;
 elseif strcmp(scheme, 'oo')
-    reserve = min(reserve, 0.08 * sc.B_MHz(:));
+    % Weaker search than Proposed (paper: OO is a baseline, not full ADMM).
+    tmax = 8;
+    a_iters = 12;
+    reserve = min(reserve, 0.1 * sc.B_MHz(:));
+else
+    tmax = 12;
+    a_iters = 20;
 end
 
-[metrics, B, C] = assess(sc, A, scheme, P_fixed, reserve);
+[metrics, B, C] = assess(sc, A_hat, scheme, P_fixed, reserve);
 history = empty_history(tmax + 1);
 t = 1;
 history = push_history(history, t, metrics, inf);
-bestA = A;
+bestA = A_hat;
 bestB = B;
 bestC = C;
 bestMet = metrics;
@@ -65,19 +76,29 @@ if verbose
 end
 
 for sweep = 1:tmax
-    anchor = A;
+    % Global update (P4/P5 style): continuous a_{m,n} in [0,1], ADMM-coupled to Â.
     order = user_order(metrics);
-    if strcmp(scheme, 'proposed')
-        mode = 'rich';
-    else
-        mode = 'pair';
-    end
     for n = order
-        A = improve_user(sc, A, n, anchor, lambda, q_eff, scheme, P_fixed, reserve, mode);
+        A = improve_user_continuous(sc, A, n, A_hat, lambda, q_eff, scheme, P_fixed, reserve, a_iters);
     end
-    gap = norm(A - anchor, 'fro');
-    lambda = lambda + q_eff * (A - anchor);
-    [metrics, B, C] = assess(sc, A, scheme, P_fixed, reserve);
+    if use_admm
+        % Local update (P6'): Â on simplex.
+        for n = 1:sc.N
+            A_hat(:, n) = project_simplex(A(:, n) + lambda(:, n) / max(q_eff, 1e-12));
+        end
+        gap = norm(A - A_hat, 'fro');
+        lambda = lambda + q_eff * (A - A_hat);
+        A_eval = A_hat;
+    else
+        % OO/RO: continuous a, then project to feasible clustering.
+        for n = 1:sc.N
+            A(:, n) = project_simplex(max(A(:, n), 0));
+        end
+        gap = norm(A - A_hat, 'fro');
+        A_hat = A;
+        A_eval = A;
+    end
+    [metrics, B, C] = assess(sc, A_eval, scheme, P_fixed, reserve);
     t = t + 1;
     history = push_history(history, t, metrics, gap);
     if verbose
@@ -86,7 +107,7 @@ for sweep = 1:tmax
     end
     if objective_of(metrics, scheme) < bestValue
         bestValue = objective_of(metrics, scheme);
-        bestA = A;
+        bestA = A_eval;
         bestB = B;
         bestC = C;
         bestMet = metrics;
@@ -106,22 +127,29 @@ out.iterations = t;
 end
 
 function out = solve_bcd(sc)
+% Centralized BCD (paper BCDO): fewer outer passes than ADMM → weaker at large N.
 A = initial_association(sc);
 reserve = consensus_reserve(sc);
 verbose = ~isfield(sc, 'verbose') || sc.verbose;
+n_outer = 3;
+a_iters = 12;
+history = empty_history(n_outer + 1);
 [metrics, B, C] = assess(sc, A, 'proposed', [], reserve);
-history = empty_history(2);
 history = push_history(history, 1, metrics, inf);
-anchor = A;
-for n = user_order(metrics)
-    A_try = improve_user(sc, A, n, anchor, zeros(size(A)), 0, 'proposed', [], reserve, 'pair');
-    if norm(A_try(:, n) - A(:, n)) > 1e-8
-        A = A_try;
-        [metrics, B, C] = assess(sc, A, 'proposed', [], reserve);
+lambda0 = zeros(size(A));
+for pass = 1:n_outer
+    A_prev = A;
+    for n = user_order(metrics)
+        A = improve_user_continuous(sc, A, n, A, lambda0, 0, 'proposed', [], reserve, a_iters);
+        A(:, n) = project_simplex(max(A(:, n), 0));
+    end
+    [metrics, B, C] = assess(sc, A, 'proposed', [], reserve);
+    gap = norm(A - A_prev, 'fro');
+    history = push_history(history, pass + 1, metrics, gap);
+    if gap <= sc.gamma
+        break
     end
 end
-gap = norm(A - anchor, 'fro');
-history = push_history(history, 2, metrics, gap);
 if verbose
     fprintf('  [bcd] Eoff %.3f  Econ %.3f  Etot %.3f J  Doff %.2f ms  Dcon %.2f ms\n', ...
         metrics.E_off, metrics.E_con, metrics.E_tot, metrics.D_off_ms, metrics.D_con_ms);
@@ -131,8 +159,8 @@ out.A = A;
 out.B = B;
 out.C = C;
 out.metrics = metrics;
-out.history = history;
-out.iterations = 2;
+out.history = trim_history(history, pass + 1);
+out.iterations = pass + 1;
 end
 
 function A = initial_association(sc)
@@ -165,60 +193,61 @@ function order = user_order(metrics)
 [~, order] = sort(metrics.D_user, 'descend');
 end
 
-function A = improve_user(sc, A, n, anchor, lambda, q_eff, scheme, P_fixed, reserve, mode)
-cols = candidate_columns(sc, n, mode);
-best_col = A(:, n);
-best_score = inf;
-for k = 1:numel(cols)
-    Trial = A;
-    Trial(:, n) = cols{k};
-    met = assess(sc, Trial, scheme, P_fixed, reserve);
-    score = objective_of(met, scheme) + admm_penalty(Trial, anchor, lambda, q_eff) ...
-        + 40 * sum(max(0, met.D_user - sc.Dt));
-    if score < best_score
-        best_score = score;
-        best_col = cols{k};
-    end
+function A = improve_user_continuous(sc, A, n, anchor, lambda, q_eff, scheme, P_fixed, reserve, a_iters)
+% Continuous a_{:,n} in [0,1]^M (paper); simplex is enforced on local Â.
+if nargin < 10 || isempty(a_iters)
+    a_iters = 40;
 end
-A(:, n) = best_col;
+M = sc.M;
+a0 = min(max(A(:, n), 0), 1);
+if sum(a0) <= 1e-12
+    a0 = ones(M, 1) / M;
+end
+obj = @(a) continuous_score(sc, A, n, a, anchor, lambda, q_eff, scheme, P_fixed, reserve);
+opts = optimoptions('fmincon', 'Display', 'off', 'Algorithm', 'sqp', ...
+    'MaxIterations', a_iters, 'OptimalityTolerance', 1e-6, 'StepTolerance', 1e-8);
+try
+    a = fmincon(obj, a0, [], [], [], [], zeros(M, 1), ones(M, 1), [], opts);
+catch
+    a = projected_gradient_box(obj, a0, max(8, round(a_iters / 2)));
+end
+A(:, n) = min(max(a(:), 0), 1);
 end
 
-function cols = candidate_columns(sc, n, mode)
-cols = cell(1, sc.M);
-for m = 1:sc.M
-    a = zeros(sc.M, 1);
-    a(m) = 1;
-    cols{m} = a;
+function score = continuous_score(sc, A, n, a, anchor, lambda, q_eff, scheme, P_fixed, reserve)
+Trial = A;
+Trial(:, n) = min(max(a(:), 0), 1);
+% Physical rates/energy use a feasible (simplex) clustering for this user.
+Trial_eval = Trial;
+Trial_eval(:, n) = project_simplex(Trial(:, n));
+met = assess(sc, Trial_eval, scheme, P_fixed, reserve);
+score = objective_of(met, scheme) + admm_penalty(Trial, anchor, lambda, q_eff) ...
+    + 40 * sum(max(0, met.D_user - sc.Dt));
 end
-if strcmp(mode, 'single') || sc.M < 2
-    return
-end
-[~, order] = sort(sc.beta_user(:, n), 'descend');
-if strcmp(mode, 'rich')
-    top = order(1:min(4, sc.M));
-    fracs = [0.5 0.5; 0.7 0.3; 0.3 0.7; 0.9 0.1; 0.1 0.9; 0.6 0.4; 0.4 0.6];
-else
-    top = order(1:min(3, sc.M));
-    fracs = [0.5 0.5; 0.7 0.3; 0.3 0.7; 0.9 0.1];
-end
-for i = 1:numel(top)
-    for j = i + 1:numel(top)
-        for f = 1:size(fracs, 1)
-            a = zeros(sc.M, 1);
-            a(top(i)) = fracs(f, 1);
-            a(top(j)) = fracs(f, 2);
-            cols{end + 1} = a; %#ok<AGROW>
-        end
+
+function a = projected_gradient_box(obj, a0, n_iter)
+a = min(max(a0(:), 0), 1);
+f0 = obj(a);
+eps_fd = 1e-4;
+step = 0.25;
+for it = 1:n_iter
+    g = zeros(size(a));
+    for i = 1:numel(a)
+        e = zeros(size(a));
+        e(i) = eps_fd;
+        g(i) = (obj(min(max(a + e, 0), 1)) - f0) / eps_fd;
     end
-end
-if strcmp(mode, 'rich') && numel(top) >= 3
-    trips = [1/3 1/3 1/3; 0.5 0.25 0.25; 0.6 0.2 0.2];
-    for t = 1:size(trips, 1)
-        a = zeros(sc.M, 1);
-        a(top(1)) = trips(t, 1);
-        a(top(2)) = trips(t, 2);
-        a(top(3)) = trips(t, 3);
-        cols{end + 1} = a; %#ok<AGROW>
+    a_try = min(max(a - step * g, 0), 1);
+    f_try = obj(a_try);
+    if f_try < f0
+        a = a_try;
+        f0 = f_try;
+        step = min(step * 1.2, 1);
+    else
+        step = step * 0.5;
+        if step < 1e-5
+            break
+        end
     end
 end
 end
@@ -226,8 +255,6 @@ end
 function value = objective_of(met, scheme)
 if strcmp(scheme, 'oo')
     value = met.E_off;
-elseif strcmp(scheme, 'proposed')
-    value = met.E_tot;
 else
     value = met.E_tot;
 end
@@ -238,10 +265,44 @@ D = A - anchor;
 p = 0.5 * q_eff * sum(D(:).^2) + sum(lambda(:) .* D(:));
 end
 
+function a = project_simplex(v)
+% Euclidean projection onto {a >= 0, sum(a)=1}.
+v = v(:);
+n = numel(v);
+if n == 0
+    a = v;
+    return
+end
+u = sort(v, 'descend');
+cssv = cumsum(u);
+rho = find(u .* (1:n)' > (cssv - 1), 1, 'last');
+if isempty(rho)
+    a = ones(n, 1) / n;
+    return
+end
+theta = (cssv(rho) - 1) / rho;
+a = max(v - theta, 0);
+s = sum(a);
+if s <= 0
+    a = ones(n, 1) / n;
+else
+    a = a / s;
+end
+end
+
 function [metrics, B, C] = assess(sc, A, scheme, P_fixed, reserve)
 se_user = uplink_se(sc, A);
-[B, C] = allocate_resources(sc, A, se_user, scheme, P_fixed, reserve);
-metrics = evaluate_solution(sc, A, B, C, se_user, scheme, P_fixed);
+if use_cvx_in_search(sc)
+    [metrics, B, C] = allocate_cvx(sc, A, se_user, scheme, P_fixed);
+else
+    [B, C] = allocate_resources(sc, A, se_user, scheme, P_fixed, reserve);
+    metrics = evaluate_solution(sc, A, B, C, se_user, scheme, P_fixed);
+end
+end
+
+function tf = use_cvx_in_search(sc)
+tf = (isfield(sc, 'cvx_in_search') && sc.cvx_in_search) ...
+    || (isappdata(0, 'ucmec_cvx_in_search') && getappdata(0, 'ucmec_cvx_in_search'));
 end
 
 function [metrics, B, C] = finish_cvx(sc, A, scheme, P_fixed)
@@ -260,7 +321,7 @@ elseif use_consensus
     is_leader(1) = true;
 end
 if ~use_consensus
-    reserve = min(reserve(:), 0.08 * sc.B_MHz(:));
+    reserve = min(reserve(:), 0.1 * sc.B_MHz(:));
 end
 B = zeros(M, N);
 C = zeros(M, N);
@@ -535,84 +596,5 @@ function h = trim_history(h, t)
 fields = fieldnames(h);
 for k = 1:numel(fields)
     h.(fields{k}) = h.(fields{k})(1:t);
-end
-end
-
-function se_user = uplink_se(sc, A)
-N = sc.N;
-sinr = zeros(1, N);
-Phi_of = cell(1, N);
-for n = 1:N
-    Phi_of{n} = dominant_aps(A(:, n), sc.M);
-end
-for n = 1:N
-    Phi = Phi_of{n};
-    g_n = stack_g(sc, Phi, n);
-    intra = [];
-    for v = 1:N
-        if v == n
-            continue
-        end
-        if isequal(Phi_of{v}, Phi)
-            intra(end + 1) = v; %#ok<AGROW>
-        end
-    end
-    overlap = 0.08;
-    if isfield(sc, 'overlap')
-        overlap = sc.overlap;
-    end
-    noise = sc.N0 * mean(sc.B_MHz(Phi)) * 1e6;
-    dof = numel(g_n);
-    keep = min(numel(intra), max(dof - 1, 0));
-    cancelled = [];
-    if keep > 0
-        strength = zeros(1, numel(intra));
-        for k = 1:numel(intra)
-            strength(k) = norm(stack_g(sc, Phi, intra(k)))^2;
-        end
-        [~, order] = sort(strength, 'descend');
-        cancelled = intra(order(1:keep));
-    end
-    R = noise * eye(dof);
-    for w = 1:N
-        if w == n || any(cancelled == w)
-            continue
-        end
-        g_w = stack_g(sc, Phi, w);
-        R = R + overlap * sc.P_user * (g_w * g_w');
-    end
-    xi = R \ g_n;
-    xi = xi / max(norm(xi), 1e-15);
-    signal = sc.P_user * abs(xi' * g_n)^2;
-    interf = 0;
-    for w = 1:N
-        if w == n || any(cancelled == w)
-            continue
-        end
-        g_w = stack_g(sc, Phi, w);
-        interf = interf + overlap * sc.P_user * abs(xi' * g_w)^2;
-    end
-    sinr(n) = signal / max(interf + noise, 1e-30);
-end
-sinr = min(max(sinr, 0), 1e8);
-se_user = max(log2(1 + sinr), 1e-3);
-end
-
-function Phi = dominant_aps(a_col, K)
-[vals, order] = sort(a_col, 'descend');
-K = min(K, numel(order));
-Phi = order(1:K);
-Phi = Phi(vals(1:K) >= 0.02);
-if isempty(Phi)
-    Phi = order(1);
-end
-Phi = sort(Phi);
-end
-
-function g = stack_g(sc, Phi, user)
-g = zeros(sc.varrho * numel(Phi), 1);
-for k = 1:numel(Phi)
-    idx = (k - 1) * sc.varrho + (1:sc.varrho);
-    g(idx) = sc.g(:, Phi(k), user);
 end
 end

@@ -47,8 +47,10 @@ Blockchain-enabled-UCMEC/
 | --- | --- |
 | `setup_path.m` | Adds paths, sets up CVX, returns repo root / scheme list / seed count (`n_seed = 8`). |
 | `build_scenario.m` | Builds a nested-RNG scenario for given `M`, `N`, and seed. |
-| `optimize_ucmec.m` | Association search (waterfill) and scheme entry points (`oo`, `so`, `ro`, `proposed`, `bcd`). |
+| `optimize_ucmec.m` | Scheme entry; `proposed` calls paper ADMM. |
+| `admm_paper.m` | Alg.2 ADMM + Alg.1 CVX P5' (RLT) + CVX P6'. |
 | `allocate_cvx.m` | Final convex bandwidth/CPU allocation (CVX + SDPT3). |
+| `uplink_se.m` | Uplink spectral efficiency. |
 | `sweep_values.m` | Shared helper for parameter sweeps over seeds and schemes. |
 
 ### Schemes
@@ -56,10 +58,10 @@ Blockchain-enabled-UCMEC/
 | Name | Alias | Meaning |
 | --- | --- | --- |
 | `proposed` | — | Joint association and allocation |
-| `oo` | `optimal_offloading` | Offloading-first objective |
+| `oo` | `optimal_offloading` | Offloading-first objective (search + weighted CVX) |
 | `ro` | `raft` | Same search; leader sampled once uniformly |
 | `so` | `single_ap` | Each user fixed to its strongest AP |
-| `bcd` | — | Same objective as `proposed`, one coordinate pass |
+| `bcd` | — | Centralized BCD alternating association and resources |
 
 ## How to run
 
@@ -68,7 +70,7 @@ Blockchain-enabled-UCMEC/
 From the `scripts/` folder:
 
 ```matlab
-experiment_all      % run every sweep
+experiment_all      % run every sweep (waterfill search + final CVX)
 plot_results        % regenerate figures from results/*.mat
 ```
 
@@ -79,6 +81,13 @@ experiment_user_number
 experiment_bandwidth
 % ...
 plot_results
+```
+
+Optional slow mode (CVX on every association candidate during search):
+
+```matlab
+experiment_user_number_cvx   % recommend first; overnight-scale
+experiment_all_cvx           % full suite; expect many hours
 ```
 
 Each sweep averages 8 nested seeds. Outputs land in `results/`; figures in `results/figures/`. The results might be a little bit different from the original paper since we have modified the realization and evaluation process. The system model, algorithms and the parameters are still align with the paper.

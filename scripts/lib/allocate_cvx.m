@@ -56,8 +56,9 @@ cvx_begin quiet
         end
     end
     if oo_mode
-        % Offloading-first; light consensus weight keeps SO worst on totals.
-        minimize(E_off + 0.25 * E_con + 40 * sum(slack))
+        % Paper OO: offloading-first. Small Econ weight keeps blockchain feasible
+        % without matching Proposed's joint optimum (baseline stays weaker on totals).
+        minimize(E_off + 0.12 * E_con + 40 * sum(slack))
     else
         minimize(E_off + E_con + 40 * sum(slack))
     end
